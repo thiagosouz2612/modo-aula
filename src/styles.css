@@ -178,3 +178,23 @@ optgroup {
   background: var(--color-ink-850);
   color: var(--color-ink-100);
 }
+
+/* palavras ligadas ao original (clique abre o estudo da palavra) */
+.palco-clicavel [data-w] {
+  cursor: pointer;
+  border-radius: 0.15em;
+}
+.palco-clicavel [data-w]:hover {
+  background: color-mix(in oklab, var(--color-lume) 18%, transparent);
+}
+.palavra.ligada {
+  text-decoration: underline dotted;
+  text-decoration-color: color-mix(in oklab, var(--color-lume) 70%, transparent);
+  text-decoration-thickness: 0.06em;
+  text-underline-offset: 0.18em;
+}
+.palavra-sel {
+  background: color-mix(in oklab, var(--color-lume) 30%, transparent);
+  box-shadow: 0 0 0 0.08em color-mix(in oklab, var(--color-lume) 60%, transparent);
+  border-radius: 0.15em;
+}

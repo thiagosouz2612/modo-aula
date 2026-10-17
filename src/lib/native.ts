@@ -25,6 +25,7 @@ async function call<T>(cmd: string, args?: Record<string, unknown>, opts?: { hea
 
 // ---------------- modo de demonstração (navegador) ----------------
 const demoFiles = new Map<string, ArrayBuffer>();
+const demoTr = new Map<string, string>();
 const demoCfg: Config = { site: "https://teologiabethel.com.br", conectado: false, pasta: "(navegador)" };
 
 export const native = {
@@ -62,6 +63,17 @@ export const native = {
   baixarBiblia: (versoes: string[], originais: boolean): Promise<void> =>
     isNative ? call("baixar_biblia", { versoes, originais }) : Promise.reject(new Error("Disponível no aplicativo.")),
   apagarBiblia: (): Promise<void> => (isNative ? call("apagar_biblia") : Promise.resolve()),
+
+  /** definição do léxico em português (já guardada) */
+  traducaoLexico: (strong: string): Promise<string | null> =>
+    isNative ? call("traducao_lexico", { strong }) : Promise.resolve(demoTr.get(strong) ?? null),
+  /** traduz a definição do léxico (precisa de internet uma vez) */
+  traduzirLexico: async (strong: string, texto: string): Promise<string> => {
+    if (isNative) return call("traduzir_lexico", { strong, texto });
+    const t = `[tradução de teste] ${texto.slice(0, 400)}`;
+    demoTr.set(strong, t);
+    return t;
+  },
 
   entrar: (usuario: string, senha: string): Promise<string> =>
     isNative ? call("entrar", { usuario, senha }) : Promise.reject(new Error("Disponível no aplicativo.")),

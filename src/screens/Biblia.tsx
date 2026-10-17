@@ -6,20 +6,16 @@
 import { useEffect, useMemo, useState } from "react";
 import { Btn, Card, Icon, inputCls, selCls, Seg } from "../components/ui";
 import {
-  cleanTranslit, cleanWord, describeMorph, headingsByVerse, isHebrew, loadBook, loadLex, loadOriginal, loadTitles, parseRef, plainDefinition,
-  splitGloss, strongLabel, type BookHeadings, type Catalog, type LexEntry, type OrigChapter, type OrigWord,
+  cleanTranslit, cleanWord, headingsByVerse, isHebrew, loadBook, loadOriginal, loadTitles, parseRef, tagVerse,
+  splitGloss, strongLabel, type BookHeadings, type Catalog, type OrigChapter, type OrigWord,
 } from "../lib/bible";
 import { cast, useCast } from "../lib/cast";
 import { useCatalog } from "../lib/hooks";
-import { loadPassage, type Vista } from "../lib/scene";
+import { isTrad, loadPassage, VISTAS, type Vista } from "../lib/scene";
+import { WordPanel } from "../components/Palavra";
 import { store, useStore } from "../lib/store";
 import { uid } from "../lib/types";
 
-const VISTAS: [Vista, string][] = [
-  ["traducao", "Tradução"],
-  ["original", "Original"],
-  ["interlinear", "Interlinear"],
-];
 
 export function Biblia() {
   const { cat, err, retry } = useCatalog();
@@ -55,6 +51,7 @@ function Reader({ cat }: { cat: Catalog }) {
   const [orig, setOrig] = useState<OrigChapter | null>(null);
   const [titles, setTitles] = useState<BookHeadings | null>(null);
   const [word, setWord] = useState<OrigWord | null>(null);
+  const [wordRef, setWordRef] = useState(0);
   const [err, setErr] = useState("");
   const info = cat.books.find((b) => b.id === book)!;
   const heb = isHebrew(book, cat);
@@ -64,14 +61,14 @@ function Reader({ cat }: { cat: Catalog }) {
     setErr("");
     setText(null);
     setOrig(null);
-    if (vista === "traducao")
+    if (isTrad(vista))
       loadBook(versao, book)
         .then((b) => !dead && setText(b[chapter - 1] ?? []))
-        .catch(() => !dead && setErr("Não foi possível abrir este livro nesta versão (sem internet?)."));
-    else
+        .catch(() => !dead && setErr("Não foi possível abrir este livro nesta versão."));
+    if (vista !== "traducao")
       loadOriginal(book, chapter)
         .then((o) => !dead && setOrig(o))
-        .catch(() => !dead && setErr("Não foi possível abrir o texto original (sem internet?)."));
+        .catch(() => !dead && setErr("Não foi possível abrir o texto original."));
     loadTitles(book).then((t) => !dead && setTitles(t));
     return () => {
       dead = true;
@@ -79,7 +76,7 @@ function Reader({ cat }: { cat: Catalog }) {
   }, [book, chapter, versao, vista]);
 
   const heads = useMemo(() => headingsByVerse(titles, chapter), [titles, chapter]);
-  const verses: number[] = vista === "traducao" ? (text ?? []).map((_, i) => i + 1) : Object.keys(orig ?? {}).map(Number).sort((a, b) => a - b);
+  const verses: number[] = isTrad(vista) ? (text ?? []).map((_, i) => i + 1) : Object.keys(orig ?? {}).map(Number).sort((a, b) => a - b);
 
   function go(t: string) {
     const r = parseRef(t, cat);
@@ -144,7 +141,7 @@ function Reader({ cat }: { cat: Catalog }) {
                 </option>
               ))}
             </select>
-            {vista === "traducao" && (
+            {isTrad(vista) && (
               <select value={versao} onChange={(e) => setVersao(e.target.value)} className={`${selCls} w-28`}>
                 {cat.versions.map((v) => (
                   <option key={v.id} value={v.id} title={v.name}>
@@ -175,8 +172,8 @@ function Reader({ cat }: { cat: Catalog }) {
           </div>
           {err && <p className="rounded-xl bg-coral/10 px-4 py-3 text-sm text-coral">{err}</p>}
           <div
-            dir={vista !== "traducao" && heb ? "rtl" : "ltr"}
-            className={`${vista === "traducao" ? "font-serif text-[19px] leading-[1.85]" : heb ? "font-hebrew text-[24px] leading-[2]" : "font-greek text-[22px] leading-[1.9]"} text-ink-100`}
+            dir={!isTrad(vista) && heb ? "rtl" : "ltr"}
+            className={`${isTrad(vista) ? "font-serif text-[19px] leading-[1.85]" : heb ? "font-hebrew text-[24px] leading-[2]" : "font-greek text-[22px] leading-[1.9]"} text-ink-100`}
           >
             {verses.map((n) => {
               const on = sel && n >= sel[0] && n <= sel[1];
@@ -198,10 +195,26 @@ function Reader({ cat }: { cat: Catalog }) {
                     )}
                     {vista === "traducao" ? (
                       text?.[n - 1]
+                    ) : vista === "strong" ? (
+                      tagVerse(text?.[n - 1] ?? "", orig?.[String(n)]).map((tk, k) => {
+                        const w = tk.word !== undefined ? orig?.[String(n)]?.[tk.word] : undefined;
+                        return w ? (
+                          <button
+                            key={k}
+                            type="button"
+                            onClick={() => (setWord(w), setWordRef(n))}
+                            className={`rounded-sm underline decoration-lume/60 decoration-dotted underline-offset-4 hover:bg-lume/15 ${word === w ? "bg-lume/25" : ""}`}
+                          >
+                            {tk.text}
+                          </button>
+                        ) : (
+                          <span key={k}>{tk.text}</span>
+                        );
+                      })
                     ) : vista === "original" ? (
                       orig?.[String(n)]?.map((w, i) => (
                         <span key={i}>
-                          <button type="button" onClick={() => setWord(w)} className={`rounded px-0.5 hover:bg-lume/20 ${word === w ? "bg-lume/25" : ""}`}>
+                          <button type="button" onClick={() => (setWord(w), setWordRef(n))} className={`rounded px-0.5 hover:bg-lume/20 ${word === w ? "bg-lume/25" : ""}`}>
                             {cleanWord(w[0])}
                           </button>{" "}
                         </span>
@@ -210,7 +223,7 @@ function Reader({ cat }: { cat: Catalog }) {
                       <span className="flex flex-wrap items-start gap-x-4 gap-y-3 py-2">
                         <sup className="pt-3 font-sans text-[11px] font-bold text-lume">{n}</sup>
                         {orig?.[String(n)]?.map((w, i) => (
-                          <button key={i} type="button" onClick={() => setWord(w)} className={`flex flex-col items-center rounded-lg px-1.5 py-1 hover:bg-edge/5 ${word === w ? "bg-lume/15" : ""}`}>
+                          <button key={i} type="button" onClick={() => (setWord(w), setWordRef(n))} className={`flex flex-col items-center rounded-lg px-1.5 py-1 hover:bg-edge/5 ${word === w ? "bg-lume/15" : ""}`}>
                             <span>{cleanWord(w[0])}</span>
                             <span dir="ltr" className="font-sans text-[11px] text-ink-400 italic">{cleanTranslit(w[1], heb)}</span>
                             <span dir="ltr" className="font-sans text-[11px] font-semibold text-lume">{splitGloss(w[4]).main}</span>
@@ -228,7 +241,11 @@ function Reader({ cat }: { cat: Catalog }) {
 
         <ProjectBar refText={refText} versao={versao} vista={vista} cat={cat} />
       </div>
-      {word && <WordPanel w={word} heb={heb} onClose={() => setWord(null)} />}
+      {word && (
+        <div className="w-[380px] shrink-0 border-l border-edge/5 bg-ink-900">
+          <WordPanel word={word} refLabel={`${info.name} ${chapter}:${wordRef}`} onClose={() => setWord(null)} onJump={setWord} />
+        </div>
+      )}
     </div>
   );
 }
@@ -278,78 +295,5 @@ function ProjectBar({ refText, versao, vista, cat }: { refText: string; versao: 
         {msg && <span className="text-xs text-ink-400">{msg}</span>}
       </Card>
     </div>
-  );
-}
-
-function WordPanel({ w, heb, onClose }: { w: OrigWord; heb: boolean; onClose: () => void }) {
-  const [lex, setLex] = useState<LexEntry | null | undefined>(undefined);
-  useEffect(() => {
-    let dead = false;
-    setLex(undefined);
-    loadLex(w[2])
-      .then((l) => !dead && setLex(l ?? null))
-      .catch(() => !dead && setLex(null));
-    return () => {
-      dead = true;
-    };
-  }, [w[2]]);
-  const g = splitGloss(w[4]);
-  return (
-    <aside className="w-[360px] shrink-0 overflow-y-auto border-l border-edge/5 bg-ink-900 p-6">
-      <div className="flex items-start justify-between">
-        <p className="text-[11px] font-bold tracking-[0.2em] text-ink-400 uppercase">Estudo da palavra</p>
-        <button type="button" onClick={onClose} className="text-ink-400 hover:text-ink-100" aria-label="Fechar">
-          <Icon name="x" className="size-4" />
-        </button>
-      </div>
-      <p dir={heb ? "rtl" : "ltr"} className={`mt-4 text-5xl ${heb ? "font-hebrew" : "font-greek"}`}>
-        {cleanWord(w[0])}
-      </p>
-      <p className="mt-2 text-sm text-ink-300 italic">{cleanTranslit(w[1], heb)}</p>
-      <p className="mt-4 text-lg font-semibold text-lume">{g.main}</p>
-      {g.base && <p className="text-xs text-ink-400">palavra-base: {g.base}</p>}
-      <dl className="mt-6 space-y-3 text-sm">
-        <div>
-          <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Strong</dt>
-          <dd className="font-semibold">{strongLabel(w[2])}</dd>
-        </div>
-        {w[3] && (
-          <div>
-            <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Gramática</dt>
-            <dd className="text-ink-200">{describeMorph(w[3], w[2])}</dd>
-          </div>
-        )}
-        {lex && (
-          <>
-            <div>
-              <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Forma do dicionário</dt>
-              <dd dir={heb ? "rtl" : "ltr"} className={`text-2xl ${heb ? "font-hebrew" : "font-greek"}`}>
-                {lex.l}
-              </dd>
-              <dd className="text-xs text-ink-400 italic">{lex.t}</dd>
-            </div>
-            <div>
-              <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Significado</dt>
-              <dd className="text-ink-100">{lex.g}</dd>
-            </div>
-            {lex.n > 0 && (
-              <div>
-                <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Ocorrências</dt>
-                <dd>{lex.n.toLocaleString("pt-BR")} vezes</dd>
-              </div>
-            )}
-            {lex.d && (
-              <div>
-                <dt className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">Léxico (inglês)</dt>
-                <dd className="mt-1 max-h-72 overflow-y-auto rounded-xl bg-ink-850 p-3 text-xs leading-relaxed whitespace-pre-line text-ink-300" data-select>
-                  {plainDefinition(lex.d)}
-                </dd>
-              </div>
-            )}
-          </>
-        )}
-        {lex === undefined && <p className="text-xs text-ink-500">Carregando o léxico…</p>}
-      </dl>
-    </aside>
   );
 }

@@ -17,17 +17,15 @@ import { useCatalog } from "../lib/hooks";
 import { addMarks, eraseMarks, MARK_NAMES, MARK_SWATCH, selectionToMarks } from "../lib/marks";
 import { demoImgs, isNative, native, type Monitor } from "../lib/native";
 import { openDeck, renderPage, slideImage } from "../lib/pdf";
-import { loadPassage, markKey, vistaOf, type Loaded, type Scene, type Tela, type Vista } from "../lib/scene";
+import { loadPassage, markKey, vistaOf, VISTAS, type Loaded, type Palavra, type Scene, type Tela, type Vista } from "../lib/scene";
+import type { OrigWord } from "../lib/bible";
+import { palavraDe, useWordInfo, WordPanel } from "../components/Palavra";
+import type { OnWord } from "../components/Palco";
 import { store, useStore } from "../lib/store";
 import { uid, type BLesson, type BMark, type BPassage } from "../lib/types";
 
 type Track = "slides" | "textos";
 const NO_MARKS: BMark[] = [];
-const VISTAS: [Vista, string][] = [
-  ["traducao", "Tradução"],
-  ["original", "Original"],
-  ["interlinear", "Interlinear"],
-];
 
 export function Apresentar({ id, go }: { id: string; go: Go }) {
   const lesson = useStore((s) => s.lessons.find((l) => l.id === id));
@@ -47,6 +45,9 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
   const [tool, setTool] = useState<number | "apagar" | null>(null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadErr, setLoadErr] = useState("");
+  const [word, setWord] = useState<{ w: OrigWord; n: number; i: number; ref: string } | null>(null);
+  const [wordOn, setWordOn] = useState(true); // mostrar a palavra no projetor
+  const [palavra, setPalavra] = useState<Palavra | null>(null);
   const stageText = useRef<HTMLDivElement>(null);
   const search = useRef<HTMLInputElement>(null);
 
@@ -109,8 +110,25 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
     const verses = split ? [loaded.verses[cur]] : loaded.verses;
     const r = loaded.ref;
     const ref = split ? `${r.book.name} ${r.chapter}:${loaded.verses[cur].n}` : loaded.label;
-    return { k: "texto", ref, versao, vista, heb: loaded.heb, verses, marks, parte: split ? [cur + 1, total] : undefined };
-  }, [capa, track, slideImg, slide, pages, loaded, split, cur, versao, vista, marks, lesson?.title]);
+    return {
+      k: "texto", ref, versao, vista, heb: loaded.heb, verses, marks,
+      parte: split ? [cur + 1, total] : undefined,
+      ...(word ? { sel: `${word.n}:${word.i}` } : {}),
+      ...(word && palavra ? { palavra } : {}),
+    };
+  }, [capa, track, slideImg, slide, pages, loaded, split, cur, versao, vista, marks, lesson?.title, word, palavra]);
+
+  // mudou o texto: fecha a palavra
+  useEffect(() => setWord(null), [passage?.ref, vista, cur, track, capa]);
+
+  // clique numa palavra do texto (original, interlinear ou Strong)
+  const onWord: OnWord = (n, i) => {
+    if (tool !== null || !loaded) return;
+    const w = loaded.orig[n]?.[i];
+    if (!w) return;
+    if (word && word.n === n && word.i === i) return setWord(null);
+    setWord({ w, n, i, ref: `${loaded.ref.book.name} ${loaded.ref.chapter}:${n}` });
+  };
 
   useEffect(() => {
     if (scene && !preto) cast.show(scene);
@@ -183,7 +201,8 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
       else if (k === "Home") track === "slides" ? setSlide(1) : (setPi(0), setVerse(0));
       else if (k === "End") track === "slides" && setSlide(pages);
       else if (k === "Escape") {
-        if (extra) setExtra(null);
+        if (word) setWord(null);
+        else if (extra) setExtra(null);
         else if (tool !== null) setTool(null);
         else go({ r: "aula", id });
       }
@@ -313,7 +332,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
         {/* palco */}
         <section className="flex min-h-0 min-w-0 flex-col p-5">
           <div className="relative grid min-h-0 flex-1 place-items-center">
-            <Stage tela={tela} textRef={stageText} onMouseUp={onMouseUp} marking={tool !== null} loading={!scene && !loadErr} error={!capa && track === "textos" ? loadErr : ""} />
+            <Stage tela={tela} textRef={stageText} onWord={onWord} onMouseUp={onMouseUp} marking={tool !== null} loading={!scene && !loadErr} error={!capa && track === "textos" ? loadErr : ""} />
           </div>
           {/* controles do texto */}
           <div className="mt-4 flex min-h-12 flex-wrap items-center justify-center gap-3">
@@ -338,7 +357,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                   ))}
                 </div>
                 <Seg size="sm" value={vista} options={VISTAS} onChange={setVista} />
-                <Toggle on={prefs.porVerso} onChange={(v) => store.setPrefs({ porVerso: v })} label={<span className="text-xs font-semibold">Um versículo por vez</span>} />
+                <Toggle on={prefs.porVerso} onChange={(v) => store.setPrefs({ porVerso: v })} label={<span className="text-xs font-semibold">1 versículo por vez</span>} />
                 <span className="h-6 w-px bg-edge/8" />
                 <div className="flex items-center gap-1" role="group" aria-label="Marca-texto">
                   {MARK_SWATCH.map((c, i) => (
@@ -387,6 +406,19 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
         </section>
 
         {/* lateral */}
+        {word ? (
+          <aside className="min-h-0 border-l border-edge/5 bg-ink-900">
+            <WordSide
+              word={word.w}
+              refLabel={word.ref}
+              on={wordOn}
+              setOn={setWordOn}
+              onPalavra={setPalavra}
+              onClose={() => setWord(null)}
+              onJump={(w) => setWord({ ...word, w })}
+            />
+          </aside>
+        ) : (
         <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l border-edge/5 bg-ink-900/60 p-4">
           <QuickSearch
             inputRef={search}
@@ -411,8 +443,10 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
             <p><Kbd>→</Kbd> <Kbd>←</Kbd> avançar e voltar · <Kbd>T</Kbd> slides/textos</p>
             <p><Kbd>V</Kbd> versículo por vez · <Kbd>O</Kbd> original · <Kbd>1</Kbd>–<Kbd>3</Kbd> versão</p>
             <p><Kbd>B</Kbd> tela preta · <Kbd>C</Kbd> capa · <Kbd>P</Kbd> projetor · <Kbd>/</Kbd> buscar</p>
+            <p className="mt-1 leading-snug">No original, interlinear ou Strong, clique numa palavra para ver o que o léxico diz.</p>
           </div>
         </aside>
+        )}
       </div>
     </div>
   );
@@ -420,7 +454,9 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
 
 // ---------------- palco do apresentador ----------------
 
-function Stage({ tela, textRef, onMouseUp, marking, loading, error }: { tela: Tela; textRef: React.Ref<HTMLDivElement>; onMouseUp: () => void; marking: boolean; loading: boolean; error: string }) {
+function Stage({
+  tela, textRef, onWord, onMouseUp, marking, loading, error,
+}: { tela: Tela; textRef: React.Ref<HTMLDivElement>; onWord: OnWord; onMouseUp: () => void; marking: boolean; loading: boolean; error: string }) {
   const box = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
@@ -442,7 +478,7 @@ function Stage({ tela, textRef, onMouseUp, marking, loading, error }: { tela: Te
         className={`relative overflow-hidden rounded-xl shadow-[0_30px_80px_-30px_rgba(0,0,0,.9)] ring-1 ring-edge/10 ${marking ? "cursor-text ring-lume/60" : ""}`}
         style={{ width: size.w, height: size.h }}
       >
-        <Palco tela={tela} textRef={textRef} mini />
+        <Palco tela={tela} textRef={textRef} mini onWord={marking ? undefined : onWord} />
         {(loading || error) && (
           <div className="absolute inset-x-0 bottom-0 bg-black/70 px-4 py-2 text-center text-xs text-ink-300">{error || "Carregando…"}</div>
         )}
@@ -604,4 +640,18 @@ function ProjectorButton() {
       )}
     </div>
   );
+}
+
+/** painel da palavra: calcula o resumo que vai para o projetor */
+function WordSide({
+  word, refLabel, on, setOn, onPalavra, onClose, onJump,
+}: {
+  word: OrigWord; refLabel: string; on: boolean; setOn: (v: boolean) => void;
+  onPalavra: (p: Palavra | null) => void; onClose: () => void; onJump: (w: OrigWord) => void;
+}) {
+  const info = useWordInfo(word);
+  const resumo = JSON.stringify(on ? palavraDe(info, true) : null);
+  useEffect(() => onPalavra(JSON.parse(resumo)), [resumo]);
+  useEffect(() => () => onPalavra(null), []);
+  return <WordPanel word={word} refLabel={refLabel} info={info} onClose={onClose} onJump={onJump} onProjetar={setOn} projetando={on} />;
 }

@@ -9,6 +9,7 @@
 // ------------------------------------------------------------------
 mod biblia;
 mod dados;
+mod lexico;
 mod plataforma;
 mod projetor;
 mod transmissao;
@@ -50,6 +51,8 @@ pub fn run() {
             biblia::biblia_status,
             biblia::baixar_biblia,
             biblia::apagar_biblia,
+            lexico::traducao_lexico,
+            lexico::traduzir_lexico,
             plataforma::entrar,
             plataforma::sair,
             plataforma::baixar_aulas,

@@ -8,7 +8,7 @@ import { parseRef, refLabel, type Catalog } from "../lib/bible";
 import { useCatalog, useDebounced } from "../lib/hooks";
 import { fmtBytes, native } from "../lib/native";
 import { countPages, forgetDeck, openDeck, renderPage } from "../lib/pdf";
-import { loadPassage, vistaOf, type Vista } from "../lib/scene";
+import { loadPassage, vistaOf, VISTAS } from "../lib/scene";
 import { store, useStore } from "../lib/store";
 import { uid, type BLesson, type BPassage } from "../lib/types";
 
@@ -182,11 +182,6 @@ function AddPassage({ cat, catErr, onAdd }: { cat: Catalog | null; catErr: strin
 
 // ---------------- um texto da aula ----------------
 
-const VISTAS: [Vista, string][] = [
-  ["traducao", "Tradução"],
-  ["original", "Original"],
-  ["interlinear", "Interlinear"],
-];
 
 function PassageRow({
   p, cat, first, last, onChange, onMove, onRemove,
