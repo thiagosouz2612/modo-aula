@@ -67,6 +67,27 @@ export const store = {
   patchLesson(id: string, f: (l: BLesson) => BLesson) {
     set({ ...state, lessons: state.lessons.map((x) => (x.id === id ? f(x) : x)) });
   },
+  // ---------------- pastas das aulas ----------------
+  createFolder(name: string, parentId?: string) {
+    const f: BFolder = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), name: name.trim() || "Pasta", ...(parentId ? { parentId } : {}) };
+    set({ ...state, folders: [...state.folders, f] });
+    return f.id;
+  },
+  renameFolder(id: string, name: string) {
+    set({ ...state, folders: state.folders.map((f) => (f.id === id ? { ...f, name: name.trim() || f.name } : f)) });
+  },
+  /** apaga a pasta: as aulas e subpastas sobem para a pasta de cima */
+  deleteFolder(id: string) {
+    const f = state.folders.find((x) => x.id === id);
+    set({
+      ...state,
+      folders: state.folders.filter((x) => x.id !== id).map((x) => (x.parentId === id ? { ...x, parentId: f?.parentId } : x)),
+      lessons: state.lessons.map((l) => (l.folderId === id ? { ...l, folderId: f?.parentId } : l)),
+    });
+  },
+  moveLesson(id: string, folderId?: string) {
+    set({ ...state, lessons: state.lessons.map((l) => (l.id === id ? { ...l, folderId } : l)) });
+  },
   deleteLesson(id: string) {
     set({ ...state, lessons: state.lessons.filter((x) => x.id !== id) });
   },
@@ -74,6 +95,12 @@ export const store = {
   merge(lessons: BLesson[], folders: BFolder[]) {
     const ids = new Set(lessons.map((l) => l.id));
     const fids = new Set(folders.map((f) => f.id));
+    // a pasta e o roteiro escolhidos aqui continuam valendo
+    const local = new Map(state.lessons.map((l) => [l.id, l]));
+    lessons = lessons.map((l) => {
+      const o = local.get(l.id);
+      return o ? { ...l, folderId: o.folderId, ...(o.roteiroId ? { roteiroId: o.roteiroId } : {}) } : l;
+    });
     set({
       ...state,
       lessons: [...lessons, ...state.lessons.filter((l) => !ids.has(l.id))],

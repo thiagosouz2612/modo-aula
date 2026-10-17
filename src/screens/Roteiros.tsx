@@ -6,8 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Go } from "../main";
 import { RoteiroEditor, type EditorHandle } from "../components/roteiro/Editor";
 import { Btn, Card, Icon, inputCls } from "../components/ui";
+import { abaixo, DRAG, FolderIcon, ItemMenu, PastasLado, Vista } from "../components/Pastas";
+import { store, useStore } from "../lib/store";
 import {
-  ago, createFolder, createNote, deleteNote, duplicateNote, getContent, ICONS, importFile, KINDS, loadRoteiros, patchNote, saveContent,
+  ago, createFolder, createNote, deleteFolder, deleteNote, duplicateNote, renameFolder, getContent, ICONS, importFile, KINDS, loadRoteiros, patchNote, saveContent,
   speakMinutes, syncRoteiros, TEMPLATES, useRoteiros, type Kind, type RNote,
 } from "../lib/roteiros";
 
@@ -48,15 +50,22 @@ export function Roteiros({ go }: { go: Go }) {
   const [msg, setMsg] = useState("");
   useEffect(() => void loadRoteiros(), []);
 
+  const vista = useStore((s) => s.prefs.vistaRoteiros);
+  const pastas = st.index.folders;
+  const semPasta = (n: RNote) => !n.folderId || !pastas.some((f) => f.id === n.folderId);
+  const dentro = useMemo(() => (folder === "todas" || folder === "sem" ? null : abaixo(pastas, folder)), [pastas, folder]);
+  const contar = (id: string) =>
+    id === "todas" ? st.index.notes.length : id === "sem" ? st.index.notes.filter(semPasta).length : st.index.notes.filter((n) => abaixo(pastas, id).has(n.folderId ?? "")).length;
+  const pastaAtual = pastas.find((f) => f.id === folder);
+  const apagar = (n: RNote) => confirm(`Excluir o roteiro “${n.title || "Sem título"}”? Ele também sai da plataforma na próxima sincronização.`) && deleteNote(n.id);
   const list = useMemo(() => {
     const f = fold(q.trim());
     return st.index.notes
       .filter((n) => kind === "todos" || n.kind === kind)
-      .filter((n) => folder === "todas" || (folder === "sem" ? !n.folderId : n.folderId === folder))
+      .filter((n) => folder === "todas" || (folder === "sem" ? semPasta(n) : dentro?.has(n.folderId ?? "")))
       .filter((n) => !f || fold(`${n.title} ${n.excerpt}`).includes(f))
       .sort((a, b) => Number(Boolean(b.pinned)) - Number(Boolean(a.pinned)) || b.updatedAt.localeCompare(a.updatedAt));
-  }, [st.index.notes, q, kind, folder]);
-  const usedFolders = st.index.folders.filter((f) => st.index.notes.some((n) => n.folderId === f.id));
+  }, [st.index.notes, q, kind, folder, dentro]);
 
   const criar = (template: string) => {
     const t = TEMPLATES.find((x) => x.id === template);
@@ -68,7 +77,7 @@ export function Roteiros({ go }: { go: Go }) {
     setMsg("Importando…");
     try {
       const { title, html } = await importFile(f);
-      const id = createNote({ kind: "aula", title, html });
+      const id = createNote({ kind: "aula", title, html, folderId: pastaAtual?.id });
       setMsg("");
       go({ r: "roteiro", id });
     } catch (e) {
@@ -77,12 +86,12 @@ export function Roteiros({ go }: { go: Go }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1180px] px-10 pt-10 pb-16">
-      <input ref={fileInput} type="file" accept=".docx,.txt,.md" className="hidden" onChange={(e) => e.target.files?.[0] && void importar(e.target.files[0])} />
+    <div className="mx-auto max-w-[1320px] px-10 pt-10 pb-16">
+      <input ref={fileInput} type="file" accept=".docx,.pdf,.txt,.md" className="hidden" onChange={(e) => e.target.files?.[0] && void importar(e.target.files[0])} />
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-xs font-bold tracking-[0.25em] text-lume uppercase">Notas</p>
-          <h1 className="mt-2 font-serif text-[40px] leading-none font-semibold tracking-tight">Roteiros</h1>
+          <h1 className="mt-2 font-display text-[40px] leading-none font-semibold tracking-tight">Roteiros</h1>
           <div className="mt-3 flex items-center gap-2">
             <SyncPill />
             <button type="button" onClick={() => void syncRoteiros()} className="text-xs font-semibold text-ink-400 hover:text-lume">
@@ -92,7 +101,7 @@ export function Roteiros({ go }: { go: Go }) {
         </div>
         <div className="flex gap-2">
           <Btn onClick={() => fileInput.current?.click()}>
-            <Icon name="baixar" /> Importar do Word
+            <Icon name="baixar" /> Importar arquivo
           </Btn>
           <Btn variant="primary" onClick={() => setNovo(true)}>
             <Icon name="mais" /> Novo roteiro
@@ -101,56 +110,123 @@ export function Roteiros({ go }: { go: Go }) {
       </header>
       {msg && <p className="mt-4 text-sm text-ink-300">{msg}</p>}
 
-      <div className="mt-8 flex flex-wrap items-center gap-3">
-        <div className="relative w-72">
-          <Icon name="busca" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-500" />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nos roteiros" className={`${inputCls} pl-9`} />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {([["todos", "Todos"], ...Object.entries(KINDS).map(([k, v]) => [k, `${v.icon} ${v.plural}`])] as [Kind | "todos", string][]).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setKind(k)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${kind === k ? "bg-lume/15 text-lume ring-lume/40" : "text-ink-300 ring-edge/8 hover:text-ink-100"}`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        {usedFolders.length > 0 && (
-          <select value={folder} onChange={(e) => setFolder(e.target.value)} className="h-9 rounded-xl bg-ink-850 px-3 text-xs font-semibold ring-1 ring-edge/8 ring-inset">
-            <option value="todas">Todas as pastas</option>
-            {usedFolders.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
+      <div className="mt-8 flex gap-8">
+        <PastasLado
+          pastas={pastas}
+          contar={contar}
+          atual={folder}
+          setAtual={setFolder}
+          criar={createFolder}
+          renomear={renameFolder}
+          apagar={deleteFolder}
+          soltar={(id, pasta) => patchNote(id, { folderId: pasta })}
+        />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="flex items-center gap-2 text-lg font-semibold">
+              {pastaAtual ? (
+                <>
+                  <FolderIcon color={pastaAtual.color} className="size-5" /> {pastaAtual.name}
+                </>
+              ) : folder === "sem" ? (
+                "Sem pasta"
+              ) : (
+                "Todos os roteiros"
+              )}
+            </p>
+            <div className="relative ml-auto w-64">
+              <Icon name="busca" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-500" />
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar nos roteiros" className={`${inputCls} pl-9`} />
+            </div>
+            <Vista value={vista} onChange={(v) => store.setPrefs({ vistaRoteiros: v })} />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {([["todos", "Todos"], ...Object.entries(KINDS).map(([k, v]) => [k, `${v.icon} ${v.plural}`])] as [Kind | "todos", string][]).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setKind(k)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset ${kind === k ? "bg-lume/15 text-lume ring-lume/40" : "text-ink-300 ring-edge/8 hover:text-ink-100"}`}
+              >
+                {label}
+              </button>
             ))}
-            <option value="sem">Sem pasta</option>
-          </select>
-        )}
-      </div>
+          </div>
 
-      {list.length === 0 ? (
-        <Card className="mt-8 grid place-items-center px-6 py-16 text-center">
-          <span className="text-4xl">📝</span>
-          <p className="mt-4 font-serif text-xl font-semibold">{st.index.notes.length ? "Nada encontrado" : "Nenhum roteiro ainda"}</p>
-          <p className="mt-2 max-w-md text-sm text-ink-400">
-            Os roteiros que o senhor escreve nas Notas da plataforma aparecem aqui depois de entrar com o login (Ajustes → Plataforma). Também dá para criar aqui mesmo.
-          </p>
-        </Card>
-      ) : (
-        <div className="mt-6 grid grid-cols-[repeat(auto-fill,minmax(270px,1fr))] gap-4">
-          {list.map((n) => (
-            <NoteCard key={n.id} n={n} onOpen={() => go({ r: "roteiro", id: n.id })} />
-          ))}
+          {list.length === 0 ? (
+            <Card className="mt-6 grid place-items-center px-6 py-16 text-center">
+              <span className="text-4xl">📝</span>
+              <p className="mt-4 font-display text-xl font-semibold">{st.index.notes.length ? (q ? "Nada encontrado" : "Pasta vazia") : "Nenhum roteiro ainda"}</p>
+              <p className="mt-2 max-w-md text-sm text-ink-400">
+                {st.index.notes.length
+                  ? "Arraste roteiros para cá ou crie um novo dentro desta pasta."
+                  : "Os roteiros que o senhor escreve nas Notas da plataforma aparecem aqui depois de entrar com o login (Ajustes → Plataforma). Também dá para criar aqui mesmo."}
+              </p>
+            </Card>
+          ) : vista === "lista" ? (
+            <div className="mt-5 overflow-hidden rounded-2xl bg-ink-850 ring-1 ring-edge/6 ring-inset">
+              {list.map((n, i) => (
+                <div
+                  key={n.id}
+                  draggable
+                  onDragStart={(e) => e.dataTransfer.setData(DRAG, n.id)}
+                  onClick={() => go({ r: "roteiro", id: n.id })}
+                  className={`flex cursor-pointer items-center gap-4 px-4 py-3 hover:bg-edge/[.03] ${i ? "border-t border-edge/6" : ""}`}
+                >
+                  <span className="text-2xl">{n.icon || KINDS[n.kind].icon}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-display text-[17px] font-semibold">
+                      {n.pinned && "📌 "}
+                      {n.title || "Sem título"}
+                    </p>
+                    <p className="truncate text-xs text-ink-400">{n.excerpt}</p>
+                  </div>
+                  {!pastaAtual && n.folderId && (
+                    <span className="hidden shrink-0 items-center gap-1.5 text-xs text-ink-400 md:flex">
+                      <FolderIcon color={pastas.find((f) => f.id === n.folderId)?.color} /> {pastas.find((f) => f.id === n.folderId)?.name}
+                    </span>
+                  )}
+                  <span className="w-24 shrink-0 text-right text-xs text-ink-400">{KINDS[n.kind].label}</span>
+                  <span className="w-20 shrink-0 text-right text-xs text-ink-500">{ago(n.updatedAt)}</span>
+                  <ItemMenu
+                    pastas={pastas}
+                    atual={n.folderId}
+                    mover={(pasta) => patchNote(n.id, { folderId: pasta })}
+                    acoes={[
+                      { label: n.pinned ? "Desafixar" : "Fixar no topo", onClick: () => patchNote(n.id, { pinned: !n.pinned || undefined }) },
+                      { label: "Excluir", danger: true, onClick: () => apagar(n) },
+                    ]}
+                  />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-5 grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
+              {list.map((n) => (
+                <div key={n.id} draggable onDragStart={(e) => e.dataTransfer.setData(DRAG, n.id)} className="relative">
+                  <NoteCard n={n} onOpen={() => go({ r: "roteiro", id: n.id })} />
+                  <div className="absolute top-3 right-3">
+                    <ItemMenu
+                      pastas={pastas}
+                      atual={n.folderId}
+                      mover={(pasta) => patchNote(n.id, { folderId: pasta })}
+                      acoes={[
+                        { label: n.pinned ? "Desafixar" : "Fixar no topo", onClick: () => patchNote(n.id, { pinned: !n.pinned || undefined }) },
+                        { label: "Excluir", danger: true, onClick: () => apagar(n) },
+                      ]}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
       {novo && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-6" onClick={() => setNovo(false)}>
           <div className="w-full max-w-2xl rounded-3xl bg-ink-850 p-6 shadow-2xl ring-1 ring-edge/10" onClick={(e) => e.stopPropagation()}>
-            <p className="font-serif text-2xl font-semibold">Novo roteiro</p>
+            <p className="font-display text-2xl font-semibold">Novo roteiro</p>
             <p className="mt-1 text-sm text-ink-400">Escolha um modelo para começar.</p>
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               {TEMPLATES.map((t) => (
@@ -175,9 +251,9 @@ function NoteCard({ n, onOpen }: { n: RNote; onOpen: () => void }) {
     <button type="button" onClick={onOpen} className="group flex flex-col rounded-2xl bg-ink-850 p-5 text-left ring-1 ring-edge/6 transition-transform ring-inset hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-3">
         <span className="text-3xl">{n.icon || k.icon}</span>
-        {n.pinned && <span className="text-xs text-lume">📌</span>}
+        {n.pinned && <span className="mr-9 text-xs text-lume">📌</span>}
       </div>
-      <p className="mt-3 line-clamp-2 font-serif text-lg leading-snug font-semibold">{n.title || "Sem título"}</p>
+      <p className="mt-3 line-clamp-2 font-display text-lg leading-snug font-semibold">{n.title || "Sem título"}</p>
       <p className="mt-1 line-clamp-3 text-[13px] leading-relaxed text-ink-400">{n.excerpt}</p>
       <p className="mt-auto pt-3 text-[11px] font-semibold tracking-wide text-ink-500 uppercase">
         <span style={{ color: k.color }} className="brightness-150">{k.label}</span> · {ago(n.updatedAt)} · ~{speakMinutes(n.words)} min
@@ -291,7 +367,7 @@ export function RoteiroScreen({ id, go }: { id: string; go: Go }) {
             onKeyDown={(e) => e.key === "Enter" && editor.current?.focus()}
             placeholder="Sem título"
             autoFocus={!note.title}
-            className="mt-3 block w-full bg-transparent font-serif text-[2.4rem] leading-tight font-semibold outline-none placeholder:text-ink-600"
+            className="mt-3 block w-full bg-transparent font-display text-[2.4rem] leading-tight font-semibold outline-none placeholder:text-ink-600"
           />
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
             <select

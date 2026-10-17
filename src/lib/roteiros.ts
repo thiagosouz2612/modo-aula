@@ -64,6 +64,9 @@ const IDX = "indice.json";
 const fileOf = (id: string) => `${id}.html`;
 /** ids apagados aqui e ainda não apagados na plataforma */
 let apagados: string[] = [];
+/** pastas mudadas ou apagadas aqui desde a última sincronização */
+let pastasMudadas: string[] = [];
+let pastasApagadas: string[] = [];
 
 export async function loadRoteiros() {
   if (state.status === "ready") return;
@@ -71,6 +74,9 @@ export async function loadRoteiros() {
     const raw = JSON.parse((await native.roteiroLer(IDX)) ?? "null") as (RIndex & { apagados?: string[] }) | null;
     if (raw?.notes) {
       apagados = raw.apagados ?? [];
+      const extra = raw as { pastasMudadas?: string[]; pastasApagadas?: string[] };
+      pastasMudadas = extra.pastasMudadas ?? [];
+      pastasApagadas = extra.pastasApagadas ?? [];
       set({ status: "ready", index: { v: 1, folders: raw.folders ?? [], notes: raw.notes } });
       return;
     }
@@ -86,7 +92,7 @@ function saveIndex(index: RIndex) {
   if (idxTimer) clearTimeout(idxTimer);
   idxTimer = setTimeout(() => {
     idxTimer = null;
-    void native.roteiroSalvar(IDX, JSON.stringify({ ...state.index, apagados }));
+    void native.roteiroSalvar(IDX, JSON.stringify({ ...state.index, apagados, pastasMudadas, pastasApagadas }));
     scheduleSync();
   }, 400);
 }
@@ -143,14 +149,19 @@ export function deleteNote(id: string) {
 
 export function createFolder(name: string, parentId?: string) {
   const f: RFolder = { id: uid(), name: name.trim() || "Pasta", parentId, createdAt: now() };
+  pastasMudadas = [...pastasMudadas, f.id];
   saveIndex({ ...state.index, folders: [...state.index.folders, f] });
   return f.id;
 }
 export function renameFolder(id: string, name: string) {
+  pastasMudadas = [...pastasMudadas, id];
   saveIndex({ ...state.index, folders: state.index.folders.map((f) => (f.id === id ? { ...f, name: name.trim() || f.name } : f)) });
 }
 export function deleteFolder(id: string) {
   const f = state.index.folders.find((x) => x.id === id);
+  pastasApagadas = [...pastasApagadas, id];
+  // as subpastas e roteiros que sobem também mudaram
+  pastasMudadas = [...pastasMudadas, ...state.index.folders.filter((x) => x.parentId === id).map((x) => x.id)];
   saveIndex({
     folders: state.index.folders.filter((x) => x.id !== id).map((x) => (x.parentId === id ? { ...x, parentId: f?.parentId } : x)),
     notes: state.index.notes.map((n) => (n.folderId === id ? { ...n, folderId: f?.parentId } : n)),
@@ -219,12 +230,22 @@ async function doSync() {
       await native.plataformaRoteirosSalvar({ action: "nota", id: l.id, html: await getContent(l.id) });
       out.push({ ...l, syncedAt: stamp });
     }
-    // pastas: junta as duas listas
-    const fids = new Set(remote.folders.map((f) => f.id));
-    const folders = [...remote.folders, ...local.folders.filter((f) => !fids.has(f.id))];
+    // pastas: as mudadas aqui valem as daqui; as apagadas aqui saem; o resto vem do site
+    const mudadas = new Set(pastasMudadas);
+    const fora = new Set(pastasApagadas);
+    const localF = new Map(local.folders.map((f) => [f.id, f]));
+    const remoteIdsF = new Set(remote.folders.map((f) => f.id));
+    const folders = [
+      ...remote.folders.filter((f) => !fora.has(f.id)).map((f) => (mudadas.has(f.id) && localF.get(f.id)) || f),
+      ...local.folders.filter((f) => !remoteIdsF.has(f.id) && !fora.has(f.id)),
+    ];
+    const vivas = new Set(folders.map((f) => f.id));
+    for (const n of out) if (n.folderId && !vivas.has(n.folderId)) delete n.folderId;
     const index: RIndex = { v: 1, folders, notes: out.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)) };
     await native.plataformaRoteirosSalvar({ action: "index", index: { ...index, notes: index.notes.map(({ syncedAt: _s, ...n }) => n) } });
     apagados = [];
+    pastasMudadas = [];
+    pastasApagadas = [];
     set({ index, sync: "ok", at: stamp });
     await native.roteiroSalvar(IDX, JSON.stringify({ ...index, apagados }));
   } catch (e) {
@@ -512,8 +533,13 @@ export async function importFile(file: File): Promise<{ title: string; html: str
     );
     return splitTitle(sanitize(value), name);
   }
+  if (/\.pdf$/i.test(file.name) || file.type === "application/pdf") {
+    const { pdfToReading } = await import("./pdf-text");
+    const { readingToHtml } = await import("./reading-html");
+    return splitTitle(sanitize(readingToHtml(await pdfToReading(file))), name);
+  }
   if (/\.(txt|md)$/i.test(file.name) || file.type.startsWith("text/")) return splitTitle(plainToHtml(await file.text()), name);
-  throw new Error("Use um arquivo do Word (.docx) ou de texto (.txt).");
+  throw new Error("Use um arquivo do Word (.docx), PDF ou texto (.txt).");
 }
 
 /** se o documento começa com um título, ele vira o título do roteiro */

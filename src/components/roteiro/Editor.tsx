@@ -21,8 +21,8 @@ const CALLOUT_ICONS = ["💡", "🎯", "⚠️", "🙏", "📌", "❓", "🔥", 
 type Cmd = { id: string; label: string; hint: string; keys: string; icon: React.ReactNode; shortcut?: string };
 const COMMANDS: Cmd[] = [
   { id: "p", label: "Texto", hint: "Parágrafo comum", keys: "texto paragrafo normal", icon: <span className="text-[15px]">Aa</span> },
-  { id: "h1", label: "Título", hint: "Título grande da seção", keys: "titulo h1 grande", icon: <span className="font-serif text-base font-bold">T</span>, shortcut: "#" },
-  { id: "h2", label: "Subtítulo", hint: "Ponto ou parte da nota", keys: "subtitulo h2 ponto parte", icon: <span className="font-serif text-sm font-bold">T</span>, shortcut: "##" },
+  { id: "h1", label: "Título", hint: "Título grande da seção", keys: "titulo h1 grande", icon: <span className="font-display text-base font-bold">T</span>, shortcut: "#" },
+  { id: "h2", label: "Subtítulo", hint: "Ponto ou parte da nota", keys: "subtitulo h2 ponto parte", icon: <span className="font-display text-sm font-bold">T</span>, shortcut: "##" },
   { id: "h3", label: "Tópico", hint: "Item menor dentro de um ponto", keys: "topico h3 item", icon: <span className="text-xs font-bold">T</span>, shortcut: "###" },
   { id: "ul", label: "Lista com marcadores", hint: "Itens soltos", keys: "lista marcadores bullet", icon: <Glyph d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01" />, shortcut: "-" },
   { id: "ol", label: "Lista numerada", hint: "Passos em ordem", keys: "lista numerada numeros ordem", icon: <Glyph d="M10 6h10M10 12h10M10 18h10M4 6h1v4M4 10h2M6 18H4c0-1 2-2 2-3s-1-1.5-2-1" />, shortcut: "1." },
@@ -852,9 +852,9 @@ export const RoteiroEditor = forwardRef<EditorHandle, { html: string; onChange: 
       >
         <BlockPicker value={fmt.block} onPick={(id) => apply(id)} />
         <Sep />
-        <Tool label="Negrito (Ctrl+B)" on={fmt.b} onClick={() => run("bold")}><b className="font-serif text-[15px]">B</b></Tool>
-        <Tool label="Itálico (Ctrl+I)" on={fmt.i} onClick={() => run("italic")}><i className="font-serif text-[15px]">I</i></Tool>
-        <Tool label="Sublinhado (Ctrl+U)" on={fmt.u} onClick={() => run("underline")}><u className="font-serif text-[15px]">U</u></Tool>
+        <Tool label="Negrito (Ctrl+B)" on={fmt.b} onClick={() => run("bold")}><b className="font-display text-[15px]">B</b></Tool>
+        <Tool label="Itálico (Ctrl+I)" on={fmt.i} onClick={() => run("italic")}><i className="font-display text-[15px]">I</i></Tool>
+        <Tool label="Sublinhado (Ctrl+U)" on={fmt.u} onClick={() => run("underline")}><u className="font-display text-[15px]">U</u></Tool>
         <Tool label="Marca-texto (Ctrl+Shift+H)" on={fmt.mark} onClick={toggleMark}>
           <span className="rounded px-1 text-[13px] font-bold" style={{ background: (MARKERS.find((m) => m.id === markColor) ?? MARKERS[0]).hex }}>A</span>
         </Tool>
@@ -1078,7 +1078,7 @@ function BlockPicker({ value, onPick }: { value: string; onPick: (id: string) =>
                 <span className="grid size-7 shrink-0 place-items-center rounded-md border border-edge/10">{o.icon}</span>
                 <span
                   className={
-                    o.id === "h1" ? "font-serif text-lg font-semibold" : o.id === "h2" ? "font-serif text-base font-semibold" : o.id === "h3" ? "text-sm font-bold" : o.id === "quote" ? "border-l-2 border-ink-100 pl-2 text-sm" : "text-sm"
+                    o.id === "h1" ? "font-display text-lg font-semibold" : o.id === "h2" ? "font-display text-base font-semibold" : o.id === "h3" ? "text-sm font-bold" : o.id === "quote" ? "border-l-2 border-ink-100 pl-2 text-sm" : "text-sm"
                   }
                 >
                   {o.label}
@@ -1195,7 +1195,7 @@ export function VerseDialog({ onInsert, onClose, action = "Inserir na nota" }: {
         <div className="mb-4 flex items-center gap-3">
           <span className="grid size-10 place-items-center rounded-xl bg-lume/12 text-lg">📖</span>
           <div className="min-w-0 flex-1">
-            <h2 className="font-serif text-lg font-semibold">Inserir versículo</h2>
+            <h2 className="font-display text-lg font-semibold">Inserir versículo</h2>
             <p className="text-xs text-ink-400">Digite a referência: Jo 3:16, Rm 8:28-30, Salmos 23</p>
           </div>
         </div>
@@ -1227,7 +1227,7 @@ export function VerseDialog({ onInsert, onClose, action = "Inserir na nota" }: {
         <div className="mt-4 min-h-24 rounded-2xl border border-edge/10 bg-lume/6 p-4">
           {res ? (
             <>
-              <p className="max-h-48 overflow-y-auto font-serif text-[15px] leading-relaxed">
+              <p className="max-h-48 overflow-y-auto font-display text-[15px] leading-relaxed">
                 {res.verses.map((v) => (
                   <span key={v.n}>
                     {res.verses.length > 1 && numbers && <sup className="mr-0.5 font-sans text-[10px] font-bold text-lume">{v.n}</sup>}

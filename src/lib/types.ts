@@ -31,10 +31,13 @@ export type Prefs = {
   escala: number; // tamanho da letra na projeção (0.8 a 1.3)
   tema: "noite" | "papel"; // fundo da projeção
   aparencia: "escuro" | "claro"; // cores do aplicativo
+  roteiroFonte: number; // tamanho da letra do roteiro na apresentação (rem)
+  vistaAulas: "grade" | "lista";
+  vistaRoteiros: "grade" | "lista";
 };
 
 export type Store = { lessons: BLesson[]; folders: BFolder[]; prefs: Prefs; versao: 1 };
 
-export const DEFAULT_PREFS: Prefs = { porVerso: true, versao: "NAA", monitor: 1, escala: 1, tema: "noite", aparencia: "escuro" };
+export const DEFAULT_PREFS: Prefs = { porVerso: true, versao: "NAA", monitor: 1, escala: 1, tema: "noite", aparencia: "escuro", roteiroFonte: 1.35, vistaAulas: "grade", vistaRoteiros: "grade" };
 
 export const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);

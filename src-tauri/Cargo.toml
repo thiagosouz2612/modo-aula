@@ -1,6 +1,6 @@
 [package]
 name = "modo-aula"
-version = "1.0.0"
+version = "1.1.0"
 description = "Modo Aula — apresentação de slides e textos bíblicos com projeção pela rede local"
 authors = ["Prof. Thiago de Souza"]
 edition = "2021"

@@ -4,7 +4,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createNote, getContent, KINDS, loadRoteiros, sanitize, saveContent, speakMinutes, useRoteiros } from "../../lib/roteiros";
-import { store } from "../../lib/store";
+import { store, useStore } from "../../lib/store";
 import type { BLesson } from "../../lib/types";
 import { Btn, Icon } from "../ui";
 import { RoteiroEditor, type EditorHandle } from "./Editor";
@@ -16,7 +16,8 @@ export function RoteiroPainel({ lesson }: { lesson: BLesson }) {
   const note = st.index.notes.find((n) => n.id === lesson.roteiroId);
   const [html, setHtml] = useState<string | null>(null);
   const [editando, setEditando] = useState(false);
-  const [tam, setTam] = useState(1.35);
+  const tam = useStore((s) => s.prefs.roteiroFonte);
+  const setTam = (f: (t: number) => number) => store.setPrefs({ roteiroFonte: Math.round(f(tam) * 100) / 100 });
   const [trocar, setTrocar] = useState(false);
   const corpo = useRef<HTMLDivElement>(null);
   const editor = useRef<EditorHandle>(null);
@@ -67,7 +68,7 @@ export function RoteiroPainel({ lesson }: { lesson: BLesson }) {
       <div className="flex shrink-0 flex-wrap items-center gap-2 border-b border-edge/8 px-6 py-3">
         <span className="text-2xl">{note.icon || KINDS[note.kind].icon}</span>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-serif text-lg font-semibold">{note.title || "Sem título"}</p>
+          <p className="truncate font-display text-lg font-semibold">{note.title || "Sem título"}</p>
           <p className="text-xs text-ink-400">
             Roteiro · só o senhor vê · ~{speakMinutes(note.words)} min de fala
           </p>
@@ -131,7 +132,7 @@ function Escolher({ lesson, atual, onPick, onCancel }: { lesson: BLesson; atual?
   return (
     <div className="h-full overflow-y-auto px-10 py-8">
       <div className="mx-auto max-w-2xl">
-        <p className="font-serif text-2xl font-semibold">Roteiro desta aula</p>
+        <p className="font-display text-2xl font-semibold">Roteiro desta aula</p>
         <p className="mt-1 text-sm text-ink-400">Escolha o esboço que o senhor vai seguir. Só aparece aqui para o senhor; a turma continua vendo os slides e os textos.</p>
         <div className="mt-5 flex gap-2">
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar roteiro" className="h-10 flex-1 rounded-xl bg-ink-850 px-3.5 text-sm ring-1 ring-edge/8 outline-none ring-inset focus:ring-lume/60" />
