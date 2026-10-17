@@ -64,6 +64,18 @@ export const native = {
     isNative ? call("baixar_biblia", { versoes, originais }) : Promise.reject(new Error("Disponível no aplicativo.")),
   apagarBiblia: (): Promise<void> => (isNative ? call("apagar_biblia") : Promise.resolve()),
 
+  // roteiros (esboços)
+  roteiroLer: (nome: string): Promise<string | null> =>
+    isNative ? call("roteiro_ler", { nome }) : Promise.resolve(localStorage.getItem(`roteiro:${nome}`)),
+  roteiroSalvar: (nome: string, texto: string): Promise<void> =>
+    isNative ? call("roteiro_salvar", { nome, texto }) : Promise.resolve(localStorage.setItem(`roteiro:${nome}`, texto)),
+  roteiroApagar: (nome: string): Promise<void> =>
+    isNative ? call("roteiro_apagar", { nome }) : Promise.resolve(localStorage.removeItem(`roteiro:${nome}`)),
+  plataformaRoteiros: (nota?: string): Promise<string> =>
+    isNative ? call("plataforma_roteiros", { nota: nota ?? null }) : Promise.reject(new Error("Disponível no aplicativo.")),
+  plataformaRoteirosSalvar: (corpo: unknown): Promise<void> =>
+    isNative ? call("plataforma_roteiros_salvar", { corpo: JSON.stringify(corpo) }) : Promise.reject(new Error("Disponível no aplicativo.")),
+
   /** definição do léxico em português (já guardada) */
   traducaoLexico: (strong: string): Promise<string | null> =>
     isNative ? call("traducao_lexico", { strong }) : Promise.resolve(demoTr.get(strong) ?? null),

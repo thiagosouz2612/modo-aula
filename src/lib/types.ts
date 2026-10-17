@@ -18,6 +18,8 @@ export type BLesson = {
   notes?: Record<string, string>;
   createdAt: string;
   updatedAt: string;
+  /** roteiro (esboço) usado nesta aula */
+  roteiroId?: string;
   /** veio da plataforma (e quando) */
   origem?: { site: string; em: string };
 };

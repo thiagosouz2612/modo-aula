@@ -173,6 +173,15 @@ const P: Record<string, ReactNode> = {
       <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" />
     </>
   ),
+  nota: <path d="M6 3.5h9l3.5 3.5v13.5H6zM15 3.5V7h3.5M9 11h6M9 14.5h6M9 18h4" />,
+  relogio: (
+    <>
+      <circle cx="12" cy="13" r="7.5" />
+      <path d="M12 9v4l2.5 2M9.5 2.5h5" />
+    </>
+  ),
+  pausa: <path d="M8 5v14M16 5v14" />,
+  zerar: <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />,
   lua: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
 };
 

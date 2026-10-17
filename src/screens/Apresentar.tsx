@@ -11,7 +11,6 @@ import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { Go } from "../main";
 import { Palco } from "../components/Palco";
 import { Btn, Icon, Kbd, Logo, Seg, Toggle } from "../components/ui";
-import { parseRef, refLabel } from "../lib/bible";
 import { cast, useCast } from "../lib/cast";
 import { useCatalog } from "../lib/hooks";
 import { addMarks, eraseMarks, MARK_NAMES, MARK_SWATCH, selectionToMarks } from "../lib/marks";
@@ -20,6 +19,9 @@ import { openDeck, renderPage, slideImage } from "../lib/pdf";
 import { loadPassage, markKey, vistaOf, VISTAS, type Loaded, type Palavra, type Scene, type Tela, type Vista } from "../lib/scene";
 import type { OrigWord } from "../lib/bible";
 import { palavraDe, useWordInfo, WordPanel } from "../components/Palavra";
+import { BuscaBiblia } from "../components/Busca";
+import { Cronometro } from "../components/Cronometro";
+import { RoteiroPainel } from "../components/roteiro/Painel";
 import type { OnWord } from "../components/Palco";
 import { store, useStore } from "../lib/store";
 import { uid, type BLesson, type BMark, type BPassage } from "../lib/types";
@@ -45,6 +47,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
   const [tool, setTool] = useState<number | "apagar" | null>(null);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [loadErr, setLoadErr] = useState("");
+  const [painel, setPainel] = useState<"palco" | "roteiro">("palco"); // o que o professor vê no meio
   const [word, setWord] = useState<{ w: OrigWord; n: number; i: number; ref: string } | null>(null);
   const [wordOn, setWordOn] = useState(true); // mostrar a palavra no projetor
   const [palavra, setPalavra] = useState<Palavra | null>(null);
@@ -177,7 +180,11 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
   // teclado (e passador de slides)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement;
+      const typing =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable);
       if (typing) {
         if (e.key === "Escape") (e.target as HTMLElement).blur();
         return;
@@ -191,7 +198,8 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
       if (["ArrowRight", "ArrowDown", "PageDown", " ", "Enter"].includes(k)) (e.preventDefault(), next());
       else if (["ArrowLeft", "ArrowUp", "PageUp", "Backspace"].includes(k)) (e.preventDefault(), prev());
       else if (k === "b" || k === "B" || k === "." || k === ",") cast.toggleBlack();
-      else if (k === "t" || k === "T" || k === "Tab") (e.preventDefault(), goTrack(track === "slides" ? "textos" : "slides"));
+      else if (k === "t" || k === "T" || k === "Tab") (e.preventDefault(), setPainel("palco"), goTrack(track === "slides" ? "textos" : "slides"));
+      else if (k === "r" || k === "R") setPainel((v) => (v === "roteiro" ? "palco" : "roteiro"));
       else if (k === "v" || k === "V") store.setPrefs({ porVerso: !prefs.porVerso });
       else if (k === "o" || k === "O") cycleVista();
       else if (k === "c" || k === "C") setCapa((c) => !c);
@@ -241,14 +249,16 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
         <p className="min-w-0 flex-1 truncate text-sm font-semibold">{lesson.title}</p>
         <Seg
           size="sm"
-          value={track}
-          onChange={goTrack}
+          value={painel === "roteiro" ? "roteiro" : track}
+          onChange={(v) => (v === "roteiro" ? setPainel("roteiro") : (setPainel("palco"), goTrack(v)))}
           options={[
             ["slides", <span key="s" className={!lesson.deck ? "opacity-40" : ""}>Slides {pages ? `· ${pages}` : ""}</span>],
             ["textos", <span key="t" className={!passages.length ? "opacity-40" : ""}>Textos · {passages.length}</span>],
+            ["roteiro", <span key="r">📝 Roteiro</span>],
           ]}
         />
         <div className="flex flex-1 items-center justify-end gap-2">
+          <Cronometro />
           <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${telas ? "bg-sage/12 text-sage" : "bg-ink-800 text-ink-400"}`}>
             <span className={`size-1.5 rounded-full ${telas ? "pulso bg-sage" : "bg-ink-500"}`} />
             {telas ? `Ao vivo · ${telas} ${telas === 1 ? "tela" : "telas"}` : "Nenhuma tela"}
@@ -329,7 +339,12 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
           )}
         </aside>
 
-        {/* palco */}
+        {/* palco (ou o roteiro, que só o professor vê) */}
+        {painel === "roteiro" ? (
+          <section className="min-h-0 min-w-0">
+            <RoteiroPainel lesson={lesson} />
+          </section>
+        ) : (
         <section className="flex min-h-0 min-w-0 flex-col p-5">
           <div className="relative grid min-h-0 flex-1 place-items-center">
             <Stage tela={tela} textRef={stageText} onWord={onWord} onMouseUp={onMouseUp} marking={tool !== null} loading={!scene && !loadErr} error={!capa && track === "textos" ? loadErr : ""} />
@@ -405,6 +420,8 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
           )}
         </section>
 
+        )}
+
         {/* lateral */}
         {word ? (
           <aside className="min-h-0 border-l border-edge/5 bg-ink-900">
@@ -420,8 +437,32 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
           </aside>
         ) : (
         <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l border-edge/5 bg-ink-900/60 p-4">
-          <QuickSearch
+          {painel === "roteiro" && (
+            <div>
+              <p className="mb-1.5 flex items-center justify-between text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">
+                No projetor agora
+                <button type="button" onClick={() => setPainel("palco")} className="tracking-normal normal-case text-lume hover:underline">
+                  ver grande
+                </button>
+              </p>
+              <div className="aspect-video overflow-hidden rounded-lg ring-1 ring-edge/10">
+                <Palco tela={tela} mini />
+              </div>
+              <div className="mt-2 flex justify-center gap-1">
+                <Btn size="sm" variant="soft" onClick={prev} title="Voltar (←)">
+                  <Icon name="voltar" className="size-4" />
+                </Btn>
+                <Btn size="sm" variant="soft" onClick={next} title="Avançar (→)">
+                  <Icon name="seta" className="size-4" />
+                </Btn>
+              </div>
+            </div>
+          )}
+          <p className="-mb-2 text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">Mostrar outro texto</p>
+          <BuscaBiblia
+            versao={passage?.versions[0] ?? prefs.versao}
             inputRef={search}
+            placeholder="Hb 11:1 ou parte do versículo  ( / )"
             onPick={(ref) => {
               const p: BPassage = { id: uid(), ref, versions: [passage?.versions[0] ?? prefs.versao], view: "traducao" };
               setExtra(p);
@@ -443,6 +484,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
             <p><Kbd>→</Kbd> <Kbd>←</Kbd> avançar e voltar · <Kbd>T</Kbd> slides/textos</p>
             <p><Kbd>V</Kbd> versículo por vez · <Kbd>O</Kbd> original · <Kbd>1</Kbd>–<Kbd>3</Kbd> versão</p>
             <p><Kbd>B</Kbd> tela preta · <Kbd>C</Kbd> capa · <Kbd>P</Kbd> projetor · <Kbd>/</Kbd> buscar</p>
+            <p><Kbd>R</Kbd> roteiro (só o senhor vê)</p>
             <p className="mt-1 leading-snug">No original, interlinear ou Strong, clique numa palavra para ver o que o léxico diz.</p>
           </div>
         </aside>
@@ -551,35 +593,6 @@ function Upcoming({
     <div>
       <p className="mb-1.5 text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">A seguir</p>
       {body}
-    </div>
-  );
-}
-
-function QuickSearch({ onPick, inputRef }: { onPick: (ref: string) => void; inputRef: React.RefObject<HTMLInputElement> }) {
-  const { cat } = useCatalog();
-  const [q, setQ] = useState("");
-  const ref = cat && q.trim() ? parseRef(q, cat) : null;
-  return (
-    <div>
-      <p className="mb-1.5 text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">Mostrar outro texto</p>
-      <div className="relative">
-        <Icon name="busca" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-500" />
-        <input
-          ref={inputRef}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && ref) {
-              onPick(refLabel(ref));
-              setQ("");
-              (e.target as HTMLInputElement).blur();
-            }
-          }}
-          placeholder="Ex.: Hb 11:1  (atalho /)"
-          className="h-10 w-full rounded-xl bg-ink-850 pr-3 pl-9 text-sm ring-1 ring-edge/8 outline-none ring-inset placeholder:text-ink-500 focus:ring-lume/60"
-        />
-      </div>
-      {q.trim() && <p className={`mt-1.5 text-xs ${ref ? "text-ink-300" : "text-coral"}`}>{ref ? `${refLabel(ref)} — Enter para mostrar` : "Referência não reconhecida"}</p>}
     </div>
   );
 }

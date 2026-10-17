@@ -136,3 +136,49 @@ pub async fn baixar_arquivo(id: String, cfg: State<'_, Config>, pasta: State<'_,
     write_atomic(&pasta.0.join("arquivos").join(&id), &all)?;
     Ok(all.len() as u64)
 }
+
+// ---------------- roteiros (notas) da plataforma ----------------
+
+/// lista (sem "nota") ou o texto de um roteiro (com "nota")
+#[tauri::command]
+pub async fn plataforma_roteiros(nota: Option<String>, cfg: State<'_, Config>) -> Result<String, String> {
+    let (site, cookie) = session(&cfg)?;
+    let mut url = format!("{site}/api/roteiros");
+    if let Some(id) = nota {
+        if !valid_id(&id) {
+            return Err("Roteiro inválido.".into());
+        }
+        url = format!("{url}?nota={id}");
+    }
+    let res = http().get(url).header(reqwest::header::COOKIE, cookie).send().await.map_err(offline)?;
+    if res.status().as_u16() == 401 {
+        let _ = cfg.update(|d| d.cookie = None);
+    }
+    if !res.status().is_success() {
+        return Err(error_of(res).await);
+    }
+    res.text().await.map_err(offline)
+}
+
+/// salva na plataforma (índice ou texto de um roteiro): o corpo é o mesmo JSON que o site usa
+#[tauri::command]
+pub async fn plataforma_roteiros_salvar(corpo: String, cfg: State<'_, Config>) -> Result<(), String> {
+    let (site, cookie) = session(&cfg)?;
+    let v: Value = serde_json::from_str(&corpo).map_err(|_| "Dados inválidos.".to_string())?;
+    let action = v.get("action").and_then(|a| a.as_str()).unwrap_or("");
+    if action != "index" && action != "nota" {
+        return Err("Ação inválida.".into());
+    }
+    let res = http()
+        .post(format!("{site}/api/roteiros"))
+        .header(reqwest::header::COOKIE, cookie)
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(corpo)
+        .send()
+        .await
+        .map_err(offline)?;
+    if !res.status().is_success() {
+        return Err(error_of(res).await);
+    }
+    Ok(())
+}

@@ -114,9 +114,11 @@ textarea,
 ::selection {
   background: color-mix(in oklab, var(--color-lume) 45%, transparent);
 }
-:focus-visible {
-  outline: 2px solid var(--color-lume);
-  outline-offset: 2px;
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--color-lume);
+    outline-offset: 2px;
+  }
 }
 * {
   scrollbar-width: thin;
@@ -197,4 +199,69 @@ optgroup {
   background: color-mix(in oklab, var(--color-lume) 30%, transparent);
   box-shadow: 0 0 0 0.08em color-mix(in oklab, var(--color-lume) 60%, transparent);
   border-radius: 0.15em;
+}
+
+/* ------------------------------------------------------------------
+   Roteiros (mesmo editor e estilos da plataforma)
+   ------------------------------------------------------------------ */
+.roteiro { font-size: 1.0625rem; line-height: 1.75; color: var(--color-ink-100); word-wrap: break-word; }
+.roteiro:focus { outline: none; }
+.roteiro > * + * { margin-top: 0.55em; }
+.roteiro p { min-height: 1.75em; }
+.roteiro h1 { font-family: var(--font-serif), serif; font-size: 1.85em; line-height: 1.2; font-weight: 600; margin-top: 1.3em; }
+.roteiro h2 { font-family: var(--font-serif), serif; font-size: 1.45em; line-height: 1.25; font-weight: 600; margin-top: 1.2em; }
+.roteiro h3 { font-size: 1.12em; line-height: 1.35; font-weight: 700; margin-top: 1em; }
+.roteiro > :first-child { margin-top: 0; }
+.roteiro b, .roteiro strong { font-weight: 700; }
+.roteiro a { color: var(--color-lume); text-decoration: underline; text-underline-offset: 3px; }
+.roteiro mark { background: #fde68a; color: #1b1718; border-radius: 3px; padding: 0 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.roteiro ul { list-style: disc; padding-left: 1.5em; }
+.roteiro ol { list-style: decimal; padding-left: 1.6em; }
+.roteiro li { margin: 0.2em 0; padding-left: 0.15em; }
+.roteiro li::marker { color: var(--color-lume); }
+.roteiro hr { border: 0; border-top: 1px solid color-mix(in oklab, var(--color-edge) 14%, transparent); margin: 1.6em 0; }
+.roteiro blockquote { border-left: 3px solid var(--color-ink-100); padding: 0.1em 0 0.1em 1em; font-size: 1.05em; }
+.roteiro blockquote.verse { border-left-color: var(--color-lume); background: color-mix(in oklab, var(--color-lume) 12%, transparent); border-radius: 0 12px 12px 0; padding: 0.8em 1.1em; font-family: var(--font-serif), serif; }
+.roteiro blockquote.verse sup { color: var(--color-lume); font-family: var(--font-sans); font-weight: 700; font-size: 0.65em; margin-right: 0.2em; }
+.roteiro blockquote cite { display: block; margin-top: 0.4em; font-style: normal; font-family: var(--font-sans); font-size: 0.8em; font-weight: 700; color: var(--color-lume); letter-spacing: 0.02em; }
+.roteiro blockquote cite::before { content: "— "; }
+.roteiro aside.callout { position: relative; background: var(--color-ink-800); border-radius: 12px; padding: 0.8em 1em 0.8em 2.9em; }
+.roteiro aside.callout::before { content: attr(data-icon); position: absolute; left: 0.85em; top: 0.75em; font-size: 1.15em; line-height: 1.5; }
+.roteiro aside.callout:not([data-icon])::before { content: "💡"; }
+.roteiro ul.check { list-style: none; padding-left: 0.2em; }
+.roteiro ul.check li { position: relative; padding-left: 1.9em; }
+.roteiro ul.check li::before { content: ""; position: absolute; left: 0; top: 0.32em; width: 1.1em; height: 1.1em; border: 2px solid var(--color-ink-500); border-radius: 5px; background: var(--color-ink-850); cursor: pointer; }
+.roteiro ul.check li[data-done="true"] { color: var(--color-ink-400); text-decoration: line-through; text-decoration-color: var(--color-ink-500); }
+.roteiro ul.check li[data-done="true"]::before { background: var(--color-lume) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E") center/80% no-repeat; border-color: var(--color-lume); }
+/* placeholder da linha vazia (como no Notion) */
+.roteiro[contenteditable="true"] p.is-empty-focus::after,
+.roteiro[contenteditable="true"] h1.is-empty-focus::after,
+.roteiro[contenteditable="true"] h2.is-empty-focus::after,
+.roteiro[contenteditable="true"] h3.is-empty-focus::after { content: attr(data-ph); color: var(--color-ink-500); pointer-events: none; }
+.roteiro[contenteditable="true"] > p:only-child:empty::after,
+.roteiro[contenteditable="true"] > p:only-child:has(> br:only-child)::after { content: "Escreva aqui… ou digite / para inserir título, citação, versículo"; color: var(--color-ink-500); pointer-events: none; }
+
+/* modo aula: letra grande para ler de longe */
+.roteiro.aula { font-size: var(--aula-size, 1.3rem); line-height: 1.7; }
+.roteiro.aula h2 { padding-top: 0.2em; }
+.roteiro.aula ul.check li::before { cursor: default; }
+
+/* bloco sendo arrastado nas notas */
+.roteiro .is-dragging { opacity: 0.35; }
+
+/* cores do marca-texto nas notas (a padrão é amarelo) */
+.roteiro mark[data-c="rosa"] { background: #fbcfe8; }
+.roteiro mark[data-c="verde"] { background: #bbf7d0; }
+.roteiro mark[data-c="azul"] { background: #bfdbfe; }
+.roteiro mark[data-c="laranja"] { background: #fed7aa; }
+.roteiro mark[data-c="roxo"] { background: #e9d5ff; }
+.roteiro mark[data-c="vermelho"] { background: #fecaca; }
+
+/* cronômetro passou do tempo: pisca forte */
+@keyframes pulso-forte {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.pulso-forte {
+  animation: pulso-forte 0.9s ease-in-out infinite;
 }

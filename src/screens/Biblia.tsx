@@ -4,7 +4,7 @@
 // Clique nos versículos para escolher; Shift+clique para um trecho.
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
-import { Btn, Card, Icon, inputCls, selCls, Seg } from "../components/ui";
+import { Btn, Card, Icon, selCls, Seg } from "../components/ui";
 import {
   cleanTranslit, cleanWord, headingsByVerse, isHebrew, loadBook, loadOriginal, loadTitles, parseRef, tagVerse,
   splitGloss, strongLabel, type BookHeadings, type Catalog, type OrigChapter, type OrigWord,
@@ -13,6 +13,7 @@ import { cast, useCast } from "../lib/cast";
 import { useCatalog } from "../lib/hooks";
 import { isTrad, loadPassage, VISTAS, type Vista } from "../lib/scene";
 import { WordPanel } from "../components/Palavra";
+import { BuscaBiblia } from "../components/Busca";
 import { store, useStore } from "../lib/store";
 import { uid } from "../lib/types";
 
@@ -46,7 +47,6 @@ function Reader({ cat }: { cat: Catalog }) {
   const [versao, setVersao] = useState(prefVersao);
   const [vista, setVista] = useState<Vista>("traducao");
   const [sel, setSel] = useState<[number, number] | null>([16, 16]);
-  const [q, setQ] = useState("");
   const [text, setText] = useState<string[] | null>(null);
   const [orig, setOrig] = useState<OrigChapter | null>(null);
   const [titles, setTitles] = useState<BookHeadings | null>(null);
@@ -84,7 +84,6 @@ function Reader({ cat }: { cat: Catalog }) {
     setBook(r.book.id);
     setChapter(r.chapter);
     setSel(r.from ? [r.from, r.to ?? r.from] : null);
-    setQ("");
     setTimeout(() => document.getElementById(`v-${r.from ?? 1}`)?.scrollIntoView({ block: "center", behavior: "smooth" }), 120);
   }
   const click = (n: number, shift: boolean) => {
@@ -114,9 +113,8 @@ function Reader({ cat }: { cat: Catalog }) {
       <div className="min-w-0 flex-1 overflow-y-auto">
         <div className="sticky top-0 z-10 border-b border-edge/5 bg-ink-950/90 px-8 py-4 backdrop-blur">
           <div className="mx-auto flex max-w-[860px] flex-wrap items-center gap-2">
-            <div className="relative w-56">
-              <Icon name="busca" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-500" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} onKeyDown={(e) => e.key === "Enter" && q.trim() && go(q)} placeholder="Ir para… (Rm 8:28)" className={`${inputCls} pl-9`} />
+            <div className="w-72">
+              <BuscaBiblia versao={versao} onPick={go} placeholder="Rm 8:28 ou “o justo viverá pela fé”" />
             </div>
             <select value={book} onChange={(e) => (setBook(e.target.value), setChapter(1), setSel(null))} className={`${selCls} w-44`}>
               <optgroup label="Antigo Testamento">

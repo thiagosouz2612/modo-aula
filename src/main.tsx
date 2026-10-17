@@ -4,7 +4,9 @@ import "./styles.css";
 import { setImgBase } from "./components/Palco";
 import { Icon, Logo } from "./components/ui";
 import { cast, startCast, useCast } from "./lib/cast";
-import { isNative } from "./lib/native";
+import { isNative, native } from "./lib/native";
+import { loadRoteiros, setConectado, syncRoteiros } from "./lib/roteiros";
+import { RoteiroScreen, Roteiros } from "./screens/Roteiros";
 import { loadStore, store, useLoaded, useStore } from "./lib/store";
 import { Ajustes } from "./screens/Ajustes";
 import { Apresentar } from "./screens/Apresentar";
@@ -12,11 +14,25 @@ import { AulaEditor } from "./screens/AulaEditor";
 import { Aulas } from "./screens/Aulas";
 import { Biblia } from "./screens/Biblia";
 
-export type Rota = { r: "aulas" } | { r: "aula"; id: string } | { r: "apresentar"; id: string } | { r: "biblia" } | { r: "ajustes"; aba?: string };
+export type Rota =
+  | { r: "aulas" }
+  | { r: "aula"; id: string }
+  | { r: "apresentar"; id: string }
+  | { r: "biblia" }
+  | { r: "roteiros" }
+  | { r: "roteiro"; id: string }
+  | { r: "ajustes"; aba?: string };
 export type Go = (r: Rota) => void;
 
 void loadStore();
 startCast();
+// roteiros: abre os do computador e, com o login da plataforma, sincroniza
+void loadRoteiros().then(() =>
+  native.config().then((c) => {
+    setConectado(c.conectado);
+    if (c.conectado) void syncRoteiros();
+  }),
+);
 
 function App() {
   const loaded = useLoaded();
@@ -40,6 +56,8 @@ function App() {
         {rota.r === "aulas" && <Aulas go={go} />}
         {rota.r === "aula" && <AulaEditor id={rota.id} go={go} />}
         {rota.r === "biblia" && <Biblia />}
+        {rota.r === "roteiros" && <Roteiros go={go} />}
+        {rota.r === "roteiro" && <RoteiroScreen key={rota.id} id={rota.id} go={go} />}
         {rota.r === "ajustes" && <Ajustes go={go} aba={rota.aba} />}
       </main>
     </div>
@@ -51,7 +69,7 @@ function Rail({ rota, go }: { rota: Rota; go: Go }) {
   const item = (r: Rota["r"], icon: string, label: string, active: boolean) => (
     <button
       type="button"
-      onClick={() => go(r === "aulas" ? { r } : r === "biblia" ? { r } : { r: "ajustes" })}
+      onClick={() => go(r === "aulas" || r === "biblia" || r === "roteiros" ? { r } : { r: "ajustes" })}
       className={`group flex w-full flex-col items-center gap-1 rounded-xl py-2.5 text-[11px] font-semibold transition-colors ${
         active ? "bg-edge/[.06] text-ink-100" : "text-ink-400 hover:text-ink-200"
       }`}
@@ -69,6 +87,7 @@ function Rail({ rota, go }: { rota: Rota; go: Go }) {
         <span className="text-[9.5px] font-bold tracking-[0.14em] whitespace-nowrap text-ink-400 uppercase">Modo Aula</span>
       </div>
       {item("aulas", "aulas", "Aulas", rota.r === "aulas" || rota.r === "aula")}
+      {item("roteiros", "nota", "Roteiros", rota.r === "roteiros" || rota.r === "roteiro")}
       {item("biblia", "biblia", "Bíblia", rota.r === "biblia")}
       {item("ajustes", "ajustes", "Ajustes", rota.r === "ajustes")}
       <div className="mt-auto flex w-full flex-col items-center gap-2">

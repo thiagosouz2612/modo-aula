@@ -179,3 +179,31 @@ pub fn definir_site(cfg: State<Config>, site: String) -> Result<String, String> 
     })?;
     Ok(s)
 }
+
+// ---------------- roteiros (esboços) ----------------
+// roteiros/indice.json (lista e pastas) e roteiros/<id>.html (texto de cada um)
+
+fn roteiro_path(pasta: &Pasta, nome: &str) -> Result<PathBuf, String> {
+    if nome != "indice.json" && !(nome.ends_with(".html") && valid_id(nome.trim_end_matches(".html"))) {
+        return Err("Nome inválido.".into());
+    }
+    let dir = pasta.0.join("roteiros");
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+    Ok(dir.join(nome))
+}
+
+#[tauri::command]
+pub fn roteiro_ler(pasta: State<Pasta>, nome: String) -> Result<Option<String>, String> {
+    Ok(std::fs::read_to_string(roteiro_path(&pasta, &nome)?).ok())
+}
+
+#[tauri::command]
+pub fn roteiro_salvar(pasta: State<Pasta>, nome: String, texto: String) -> Result<(), String> {
+    write_atomic(&roteiro_path(&pasta, &nome)?, texto.as_bytes())
+}
+
+#[tauri::command]
+pub fn roteiro_apagar(pasta: State<Pasta>, nome: String) -> Result<(), String> {
+    let _ = std::fs::remove_file(roteiro_path(&pasta, &nome)?);
+    Ok(())
+}

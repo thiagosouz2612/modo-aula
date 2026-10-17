@@ -11,6 +11,7 @@ import { useCatalog } from "../lib/hooks";
 import { fmtBytes, native, on, type BibliaStatus, type Config, type Info, type Progresso } from "../lib/native";
 import { store, useStore } from "../lib/store";
 import { importFromPlatform } from "../lib/sync";
+import { setConectado, syncRoteiros } from "../lib/roteiros";
 
 const ABAS = [
   ["projecao", "Projeção", "projetor"],
@@ -208,6 +209,8 @@ function Conta({ go }: { go: Go }) {
       if (site.trim() !== cfg.site) await native.definirSite(site);
       const nome = await native.entrar(user, pass);
       setPass("");
+      setConectado(true);
+      void syncRoteiros();
       setMsg({ ok: true, t: `Conectado como ${nome}.` });
       await reload();
     } catch (e) {
@@ -245,7 +248,7 @@ function Conta({ go }: { go: Go }) {
               <Btn variant="primary" onClick={() => void trazer()} disabled={Boolean(busy)}>
                 <Icon name="nuvem" /> Trazer as aulas
               </Btn>
-              <Btn variant="ghost" onClick={() => void native.sair().then(reload)}>
+              <Btn variant="ghost" onClick={() => (setConectado(false), void native.sair().then(reload))}>
                 <Icon name="sair" className="size-4" /> Sair
               </Btn>
             </div>

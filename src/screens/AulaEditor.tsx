@@ -11,6 +11,7 @@ import { countPages, forgetDeck, openDeck, renderPage } from "../lib/pdf";
 import { loadPassage, vistaOf, VISTAS } from "../lib/scene";
 import { store, useStore } from "../lib/store";
 import { uid, type BLesson, type BPassage } from "../lib/types";
+import { createNote, KINDS, loadRoteiros, speakMinutes, useRoteiros } from "../lib/roteiros";
 
 export function AulaEditor({ id, go }: { id: string; go: Go }) {
   const lesson = useStore((s) => s.lessons.find((l) => l.id === id));
@@ -109,6 +110,10 @@ export function AulaEditor({ id, go }: { id: string; go: Go }) {
             <Icon name="pdf" className="size-4 text-lume" /> Apresentação
           </h2>
           <DeckCard lesson={lesson} save={save} />
+          <h2 className="mt-8 mb-3 flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-ink-300 uppercase">
+            <Icon name="nota" className="size-4 text-lume" /> Roteiro da aula
+          </h2>
+          <RoteiroCard lesson={lesson} save={save} go={go} />
         </aside>
       </div>
     </div>
@@ -411,4 +416,51 @@ function Thumb({ fileId }: { fileId: string }) {
     };
   }, [fileId]);
   return <div ref={box} className="grid h-full w-full place-items-center [&>canvas]:max-h-full [&>canvas]:max-w-full" />;
+}
+
+function RoteiroCard({ lesson, save, go }: { lesson: BLesson; save: (p: Partial<BLesson>) => void; go: Go }) {
+  const st = useRoteiros();
+  useEffect(() => void loadRoteiros(), []);
+  const note = st.index.notes.find((n) => n.id === lesson.roteiroId);
+  return (
+    <Card className="p-4">
+      {note ? (
+        <div className="flex items-center gap-3">
+          <span className="text-2xl">{note.icon || KINDS[note.kind].icon}</span>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-semibold">{note.title || "Sem título"}</p>
+            <p className="text-xs text-ink-400">~{speakMinutes(note.words)} min de fala · aparece na apresentação (tecla R)</p>
+          </div>
+          <Btn size="sm" onClick={() => go({ r: "roteiro", id: note.id })}>
+            Abrir
+          </Btn>
+        </div>
+      ) : (
+        <p className="text-xs text-ink-400">Nenhum roteiro ligado a esta aula.</p>
+      )}
+      <select
+        value={note?.id ?? ""}
+        onChange={(e) => {
+          if (e.target.value === "__novo") {
+            const rid = createNote({ kind: "aula", template: "aula", title: lesson.title });
+            save({ roteiroId: rid });
+            return go({ r: "roteiro", id: rid });
+          }
+          save({ roteiroId: e.target.value || undefined });
+        }}
+        className="mt-3 h-9 w-full rounded-xl bg-ink-800 px-3 text-xs font-semibold ring-1 ring-edge/8 ring-inset"
+      >
+        <option value="">{note ? "Tirar o roteiro" : "Escolher um roteiro…"}</option>
+        {st.index.notes
+          .slice()
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+          .map((n) => (
+            <option key={n.id} value={n.id}>
+              {n.icon || KINDS[n.kind].icon} {n.title || "Sem título"}
+            </option>
+          ))}
+        <option value="__novo">+ Criar roteiro novo para esta aula</option>
+      </select>
+    </Card>
+  );
 }
