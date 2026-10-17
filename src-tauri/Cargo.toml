@@ -1,0 +1,30 @@
+[package]
+name = "modo-aula"
+version = "1.0.0"
+description = "Modo Aula — apresentação de slides e textos bíblicos com projeção pela rede local"
+authors = ["Prof. Thiago de Souza"]
+edition = "2021"
+
+[lib]
+name = "modo_aula_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "fs", "net", "time"] }
+axum = { version = "0.8", features = ["ws"] }
+futures-util = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json"] }
+local-ip-address = "0.6"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

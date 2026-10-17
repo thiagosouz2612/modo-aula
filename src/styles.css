@@ -1,0 +1,136 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/literata";
+@import "@fontsource-variable/literata/wght-italic.css";
+@import "@fontsource/noto-serif-hebrew/400.css";
+@import "@fontsource/noto-serif-hebrew/600.css";
+@import "@fontsource/gentium-book-plus/400.css";
+@import "@fontsource/gentium-book-plus/400-italic.css";
+@import "@fontsource/gentium-book-plus/700.css";
+
+/* ------------------------------------------------------------------
+   Modo Aula — identidade visual
+   Fundo de estúdio (grafite), luz âmbar de projetor como destaque,
+   texto bíblico em serifa (Literata), grego em Gentium e hebraico em
+   Noto Serif Hebrew.
+   ------------------------------------------------------------------ */
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-serif: "Literata Variable", Georgia, serif;
+  --font-greek: "Gentium Book Plus", "Literata Variable", serif;
+  --font-hebrew: "Noto Serif Hebrew", "Times New Roman", serif;
+
+  --color-ink-950: #0b0d10;
+  --color-ink-900: #101318;
+  --color-ink-850: #14181e;
+  --color-ink-800: #1a1f27;
+  --color-ink-750: #20262f;
+  --color-ink-700: #29303b;
+  --color-ink-600: #3a4350;
+  --color-ink-500: #566070;
+  --color-ink-400: #808a99;
+  --color-ink-300: #aab2be;
+  --color-ink-200: #d2d7de;
+  --color-ink-100: #eceae4;
+  --color-paper: #f4efe6;
+
+  --color-lume: #f2b544;
+  --color-lume-strong: #ffc65a;
+  --color-lume-deep: #9a6a12;
+  --color-sage: #6fc29a;
+  --color-coral: #ef7b6c;
+  --color-sky: #79a8f5;
+
+  --radius-xl2: 1.1rem;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+body {
+  margin: 0;
+  background: var(--color-ink-950);
+  color: var(--color-ink-100);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+  user-select: none;
+  overflow: hidden;
+}
+input,
+textarea,
+[data-select] {
+  user-select: text;
+}
+::selection {
+  background: color-mix(in oklab, var(--color-lume) 45%, transparent);
+}
+:focus-visible {
+  outline: 2px solid var(--color-lume);
+  outline-offset: 2px;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-600) transparent;
+}
+
+/* textos do palco: a seleção vira marca-texto */
+.palco-texto {
+  user-select: text;
+}
+.palco-texto ::selection {
+  background: color-mix(in oklab, var(--color-lume) 55%, transparent);
+}
+
+/* marca-texto (cores no fundo escuro e no claro) */
+.marca {
+  border-radius: 0.18em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  padding: 0 0.06em;
+  margin: 0 -0.06em;
+}
+.tema-noite .marca-0 { background: rgb(246 201 69 / 0.42); }
+.tema-noite .marca-1 { background: rgb(95 211 141 / 0.38); }
+.tema-noite .marca-2 { background: rgb(106 168 255 / 0.42); }
+.tema-noite .marca-3 { background: rgb(242 127 184 / 0.42); }
+.tema-papel .marca-0 { background: rgb(250 210 60 / 0.7); }
+.tema-papel .marca-1 { background: rgb(110 220 150 / 0.6); }
+.tema-papel .marca-2 { background: rgb(130 180 255 / 0.6); }
+.tema-papel .marca-3 { background: rgb(250 150 200 / 0.6); }
+
+@keyframes entra {
+  from { opacity: 0; transform: translateY(0.35em); }
+  to { opacity: 1; transform: none; }
+}
+.entra {
+  animation: entra 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes pulso {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulso {
+  animation: pulso 1.6s ease-in-out infinite;
+}
+
+/* página da projeção */
+body.tela {
+  background: #000;
+  cursor: none;
+}
+body.tela.mouse {
+  cursor: default;
+}
+
+/* listas de opção no tema escuro (Windows e Linux) */
+:root {
+  color-scheme: dark;
+}
+option,
+optgroup {
+  background: var(--color-ink-850);
+  color: var(--color-ink-100);
+}
