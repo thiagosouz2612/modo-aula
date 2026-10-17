@@ -63,7 +63,7 @@ export function AulaEditor({ id, go }: { id: string; go: Go }) {
           <select
             value={lesson.folderId ?? ""}
             onChange={(e) => save({ folderId: e.target.value || undefined })}
-            className="rounded-lg bg-ink-850 px-2.5 py-1.5 text-xs font-semibold text-ink-200 ring-1 ring-white/8 outline-none ring-inset"
+            className="rounded-lg bg-ink-850 px-2.5 py-1.5 text-xs font-semibold text-ink-200 ring-1 ring-edge/8 outline-none ring-inset"
           >
             <option value="">Sem pasta</option>
             {folders.map((f) => (
@@ -100,7 +100,7 @@ export function AulaEditor({ id, go }: { id: string; go: Go }) {
                 onRemove={() => save({ passages: lesson.passages.filter((x) => x.id !== p.id) })}
               />
             ))}
-            {!lesson.passages.length && <p className="rounded-xl border border-dashed border-white/10 px-4 py-6 text-center text-sm text-ink-500">Nenhum texto ainda. Digite uma referência acima.</p>}
+            {!lesson.passages.length && <p className="rounded-xl border border-dashed border-edge/10 px-4 py-6 text-center text-sm text-ink-500">Nenhum texto ainda. Digite uma referência acima.</p>}
           </div>
         </section>
 
@@ -231,7 +231,7 @@ function PassageRow({
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <VersionPicker cat={cat} value={p.versions} onChange={(versions) => onChange({ ...p, versions })} />
-        <span className="mx-1 h-5 w-px bg-white/8" />
+        <span className="mx-1 h-5 w-px bg-edge/8" />
         <Seg size="sm" value={vistaOf(p.view)} options={VISTAS} onChange={(view) => onChange({ ...p, view })} />
       </div>
     </Card>
@@ -246,7 +246,7 @@ export function IconBtn({ icon, label, onClick, disabled, danger }: { icon: stri
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={`grid size-8 place-items-center rounded-lg transition-colors disabled:opacity-25 ${danger ? "text-ink-400 hover:bg-coral/10 hover:text-coral" : "text-ink-400 hover:bg-white/5 hover:text-ink-100"}`}
+      className={`grid size-8 place-items-center rounded-lg transition-colors disabled:opacity-25 ${danger ? "text-ink-400 hover:bg-coral/10 hover:text-coral" : "text-ink-400 hover:bg-edge/5 hover:text-ink-100"}`}
     >
       <Icon name={icon} className="size-4" />
     </button>
@@ -271,7 +271,7 @@ function VersionPicker({ cat, value, onChange }: { cat: Catalog | null; value: s
         <select
           value=""
           onChange={(e) => e.target.value && onChange([...value, e.target.value])}
-          className="w-auto rounded-lg bg-ink-800 px-2 py-1 text-xs font-semibold text-ink-300 ring-1 ring-white/8 outline-none ring-inset"
+          className="w-auto rounded-lg bg-ink-800 px-2 py-1 text-xs font-semibold text-ink-300 ring-1 ring-edge/8 outline-none ring-inset"
         >
           <option value="">+ versão</option>
           {others.map((v) => (
@@ -385,7 +385,7 @@ function DeckCard({ lesson, save }: { lesson: BLesson; save: (p: Partial<BLesson
             const f = e.dataTransfer.files?.[0];
             if (f) void pick(f);
           }}
-          className="flex w-full flex-col items-center gap-2 px-6 py-12 text-center transition-colors hover:bg-white/[.02]"
+          className="flex w-full flex-col items-center gap-2 px-6 py-12 text-center transition-colors hover:bg-edge/[.02]"
         >
           <span className="grid size-12 place-items-center rounded-2xl bg-lume/12 text-lume">
             <Icon name="pdf" className="size-6" />
@@ -394,7 +394,7 @@ function DeckCard({ lesson, save }: { lesson: BLesson; save: (p: Partial<BLesson
           <span className="text-xs text-ink-400">Clique ou arraste o arquivo aqui. Fica guardado neste computador.</span>
         </button>
       )}
-      {(busy || err) && <p className={`border-t border-white/5 px-4 py-2.5 text-xs ${err ? "text-coral" : "text-ink-300"}`}>{err || busy}</p>}
+      {(busy || err) && <p className={`border-t border-edge/5 px-4 py-2.5 text-xs ${err ? "text-coral" : "text-ink-300"}`}>{err || busy}</p>}
     </Card>
   );
 }

@@ -7,7 +7,7 @@ import { useLayoutEffect, useRef, type ReactNode, type Ref } from "react";
 import { segments } from "../lib/marks";
 import type { Scene, SVerse, Tela, Word } from "../lib/scene";
 import type { BMark } from "../lib/types";
-import { Logo } from "./ui";
+import { LogoCompleto } from "./ui";
 
 /** onde estão as imagens dos slides (servidor local do aplicativo) */
 let imgBase = "";
@@ -21,7 +21,7 @@ export function Palco({ tela, textRef, mini = false }: { tela: Tela; textRef?: R
   const dark = tema === "noite" || s.k === "preto" || s.k === "slide";
   return (
     <div
-      className={`tema-${tema} relative h-full w-full overflow-hidden ${dark ? "text-paper" : "text-[#1d1a16]"}`}
+      className={`tema-${tema} ${tema === "noite" ? "escuro" : "claro"} relative h-full w-full overflow-hidden ${dark ? "text-paper" : "text-[#1d1a16]"}`}
       style={{
         containerType: "size",
         background:
@@ -42,12 +42,13 @@ export function Palco({ tela, textRef, mini = false }: { tela: Tela; textRef?: R
 function LogoScene({ titulo, tema }: { titulo?: string; tema: Tela["tema"] }) {
   return (
     <div className="absolute inset-0 grid place-items-center">
-      <div className="flex flex-col items-center gap-[2.2cqh] text-center">
-        <Logo style={{ width: "11cqh", height: "11cqh" }} />
-        {titulo ? (
-          <p className="max-w-[80cqw] font-serif text-[6cqh] leading-tight font-medium text-balance">{titulo}</p>
-        ) : (
-          <p className={`text-[2.4cqh] font-medium tracking-[0.4em] uppercase ${tema === "noite" ? "text-ink-400" : "text-[#8c8172]"}`}>Modo Aula</p>
+      <div className="flex flex-col items-center gap-[4cqh] text-center">
+        <LogoCompleto tom={tema === "noite" ? "branco" : "cor"} style={{ height: titulo ? "13cqh" : "17cqh", width: "auto" }} />
+        {titulo && (
+          <>
+            <span className="h-[0.4cqh] w-[8cqw] rounded-full bg-marca" />
+            <p className="max-w-[80cqw] font-serif text-[6cqh] leading-tight font-medium text-balance">{titulo}</p>
+          </>
         )}
       </div>
     </div>
@@ -90,13 +91,13 @@ function TextoScene({ s, escala, textRef, mini, tema }: { s: TextoS; escala: num
 
   const orig = s.vista !== "traducao";
   const hebFont = s.heb && orig;
-  const accent = tema === "noite" ? "text-lume" : "text-[#9a6a12]";
+  const accent = "text-lume";
   const muted = tema === "noite" ? "text-ink-400" : "text-[#7c7264]";
 
   return (
     <>
       <div className="absolute top-[4.2cqh] right-[4.5cqw] left-[4.5cqw] flex items-baseline justify-end gap-[1.2cqw] text-right">
-        <span className={`h-px w-[6cqw] self-center ${tema === "noite" ? "bg-lume/60" : "bg-[#9a6a12]/50"}`} />
+        <span className={`h-px w-[6cqw] self-center bg-lume/60`} />
         <span className="font-sans text-[2.9cqh] font-semibold tracking-wide">{s.ref}</span>
         <span className={`font-sans text-[2.1cqh] font-medium tracking-[0.18em] uppercase ${muted}`}>
           {s.vista === "traducao" ? s.versao : s.heb ? "Hebraico" : "Grego"}

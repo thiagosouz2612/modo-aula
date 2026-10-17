@@ -214,11 +214,11 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
   return (
     <div className="flex h-full flex-col bg-ink-950">
       {/* barra de cima */}
-      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-white/5 bg-ink-900 px-3">
+      <header className="flex h-14 shrink-0 items-center gap-3 border-b border-edge/5 bg-ink-900 px-3">
         <Btn variant="ghost" size="sm" onClick={() => go({ r: "aula", id })} title="Sair (Esc)">
           <Icon name="voltar" className="size-4" /> Sair
         </Btn>
-        <Logo className="size-6" />
+        <Logo className="size-6 text-lume" />
         <p className="min-w-0 flex-1 truncate text-sm font-semibold">{lesson.title}</p>
         <Seg
           size="sm"
@@ -243,7 +243,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
 
       <div className="grid min-h-0 flex-1 grid-cols-[250px_minmax(0,1fr)_300px]">
         {/* lista */}
-        <aside className="min-h-0 overflow-y-auto border-r border-white/5 bg-ink-900/60 p-3">
+        <aside className="min-h-0 overflow-y-auto border-r border-edge/5 bg-ink-900/60 p-3">
           {track === "slides" ? (
             doc ? (
               <div className="space-y-2">
@@ -252,7 +252,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                     key={n}
                     type="button"
                     onClick={() => (setCapa(false), setSlide(n))}
-                    className={`relative block w-full overflow-hidden rounded-lg ring-2 transition-colors ${!capa && n === slide ? "ring-lume" : "ring-transparent hover:ring-white/15"}`}
+                    className={`relative block w-full overflow-hidden rounded-lg ring-2 transition-colors ${!capa && n === slide ? "ring-lume" : "ring-transparent hover:ring-edge/15"}`}
                   >
                     <SlideThumb doc={doc} fileId={lesson.deck!.fileId} n={n} />
                     <span className="absolute bottom-1 left-1 rounded bg-black/70 px-1.5 text-[10px] font-bold text-ink-200">{n}</span>
@@ -271,7 +271,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                   type="button"
                   onClick={() => (setCapa(false), setExtra(null), setPi(i), setVi(0), setVerse(0))}
                   className={`w-full rounded-xl px-3 py-2.5 text-left transition-colors ${
-                    !capa && !extra && i === pi ? "bg-lume/12 ring-1 ring-lume/30 ring-inset" : "hover:bg-white/[.04]"
+                    !capa && !extra && i === pi ? "bg-lume/12 ring-1 ring-lume/30 ring-inset" : "hover:bg-edge/[.04]"
                   }`}
                 >
                   <p className={`font-serif text-[15px] font-semibold ${!capa && !extra && i === pi ? "text-lume" : ""}`}>{p.ref}</p>
@@ -329,7 +329,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                       type="button"
                       onClick={() => setVi(i)}
                       className={`rounded-lg px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${
-                        v === versao ? "bg-lume/15 text-lume ring-lume/35" : "text-ink-300 ring-white/8 hover:text-ink-100"
+                        v === versao ? "bg-lume/15 text-lume ring-lume/35" : "text-ink-300 ring-edge/8 hover:text-ink-100"
                       }`}
                       title={`Versão ${i + 1}`}
                     >
@@ -339,7 +339,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                 </div>
                 <Seg size="sm" value={vista} options={VISTAS} onChange={setVista} />
                 <Toggle on={prefs.porVerso} onChange={(v) => store.setPrefs({ porVerso: v })} label={<span className="text-xs font-semibold">Um versículo por vez</span>} />
-                <span className="h-6 w-px bg-white/8" />
+                <span className="h-6 w-px bg-edge/8" />
                 <div className="flex items-center gap-1" role="group" aria-label="Marca-texto">
                   {MARK_SWATCH.map((c, i) => (
                     <button
@@ -347,7 +347,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                       type="button"
                       title={`Marca-texto ${MARK_NAMES[i].toLowerCase()} — selecione o texto no palco`}
                       onClick={() => setTool(tool === i ? null : i)}
-                      className={`size-6 rounded-full ring-2 ring-offset-2 ring-offset-ink-950 transition-transform ${tool === i ? "scale-110 ring-white" : "ring-transparent hover:scale-105"}`}
+                      className={`size-6 rounded-full ring-2 ring-offset-2 ring-offset-ink-950 transition-transform ${tool === i ? "scale-110 ring-ink-100" : "ring-transparent hover:scale-105"}`}
                       style={{ background: c }}
                     />
                   ))}
@@ -355,7 +355,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
                     type="button"
                     title="Apagar destaque — selecione o trecho"
                     onClick={() => setTool(tool === "apagar" ? null : "apagar")}
-                    className={`grid size-7 place-items-center rounded-full ${tool === "apagar" ? "bg-white text-ink-950" : "text-ink-300 hover:bg-white/5"}`}
+                    className={`grid size-7 place-items-center rounded-full ${tool === "apagar" ? "bg-ink-100 text-ink-950" : "text-ink-300 hover:bg-edge/5"}`}
                   >
                     <Icon name="borracha" className="size-4" />
                   </button>
@@ -387,7 +387,7 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
         </section>
 
         {/* lateral */}
-        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l border-white/5 bg-ink-900/60 p-4">
+        <aside className="flex min-h-0 flex-col gap-4 overflow-y-auto border-l border-edge/5 bg-ink-900/60 p-4">
           <QuickSearch
             inputRef={search}
             onPick={(ref) => {
@@ -403,10 +403,10 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
           {notes && (
             <div>
               <p className="mb-1.5 text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">Comentário do slide</p>
-              <p className="rounded-xl bg-ink-850 p-3 text-sm leading-relaxed whitespace-pre-wrap text-ink-200 ring-1 ring-white/5 ring-inset">{notes}</p>
+              <p className="rounded-xl bg-ink-850 p-3 text-sm leading-relaxed whitespace-pre-wrap text-ink-200 ring-1 ring-edge/5 ring-inset">{notes}</p>
             </div>
           )}
-          <div className="mt-auto rounded-xl bg-ink-850 p-3 text-[11px] leading-6 text-ink-400 ring-1 ring-white/5 ring-inset">
+          <div className="mt-auto rounded-xl bg-ink-850 p-3 text-[11px] leading-6 text-ink-400 ring-1 ring-edge/5 ring-inset">
             <p className="mb-1 font-bold tracking-[0.18em] uppercase">Atalhos</p>
             <p><Kbd>→</Kbd> <Kbd>←</Kbd> avançar e voltar · <Kbd>T</Kbd> slides/textos</p>
             <p><Kbd>V</Kbd> versículo por vez · <Kbd>O</Kbd> original · <Kbd>1</Kbd>–<Kbd>3</Kbd> versão</p>
@@ -439,7 +439,7 @@ function Stage({ tela, textRef, onMouseUp, marking, loading, error }: { tela: Te
     <div ref={box} className="absolute inset-0 grid place-items-center">
       <div
         onMouseUp={onMouseUp}
-        className={`relative overflow-hidden rounded-xl shadow-[0_30px_80px_-30px_rgba(0,0,0,.9)] ring-1 ring-white/10 ${marking ? "cursor-text ring-lume/60" : ""}`}
+        className={`relative overflow-hidden rounded-xl shadow-[0_30px_80px_-30px_rgba(0,0,0,.9)] ring-1 ring-edge/10 ${marking ? "cursor-text ring-lume/60" : ""}`}
         style={{ width: size.w, height: size.h }}
       >
         <Palco tela={tela} textRef={textRef} mini />
@@ -491,7 +491,7 @@ function Upcoming({
   if (capa) body = <p className="text-sm text-ink-300">Começar a aula ({track === "slides" ? "slide 1" : (lesson.passages[0]?.ref ?? "")})</p>;
   else if (track === "slides" && slide < pages && doc)
     body = (
-      <div className="overflow-hidden rounded-lg ring-1 ring-white/10">
+      <div className="overflow-hidden rounded-lg ring-1 ring-edge/10">
         <SlideThumb key={slide + 1} doc={doc} fileId={lesson.deck!.fileId} n={slide + 1} />
       </div>
     );
@@ -540,7 +540,7 @@ function QuickSearch({ onPick, inputRef }: { onPick: (ref: string) => void; inpu
             }
           }}
           placeholder="Ex.: Hb 11:1  (atalho /)"
-          className="h-10 w-full rounded-xl bg-ink-850 pr-3 pl-9 text-sm ring-1 ring-white/8 outline-none ring-inset placeholder:text-ink-500 focus:ring-lume/60"
+          className="h-10 w-full rounded-xl bg-ink-850 pr-3 pl-9 text-sm ring-1 ring-edge/8 outline-none ring-inset placeholder:text-ink-500 focus:ring-lume/60"
         />
       </div>
       {q.trim() && <p className={`mt-1.5 text-xs ${ref ? "text-ink-300" : "text-coral"}`}>{ref ? `${refLabel(ref)} — Enter para mostrar` : "Referência não reconhecida"}</p>}
@@ -573,14 +573,14 @@ function ProjectorButton() {
         <Icon name="projetor" className="size-4" /> {projetor ? "Projetor ligado" : "Projetor"}
       </Btn>
       {open && (
-        <div className="absolute top-11 right-0 z-30 w-72 rounded-2xl bg-ink-800 p-2 shadow-2xl ring-1 ring-white/10">
+        <div className="absolute top-11 right-0 z-30 w-72 rounded-2xl bg-ink-800 p-2 shadow-2xl ring-1 ring-edge/10">
           <p className="px-2 pt-1 pb-2 text-[11px] font-bold tracking-[0.18em] text-ink-400 uppercase">Abrir a projeção em</p>
           {list.map((m) => (
             <button
               key={m.indice}
               type="button"
               onClick={() => void pick(m.indice)}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/5 ${m.indice === monitor ? "bg-white/[.04]" : ""}`}
+              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-edge/5 ${m.indice === monitor ? "bg-edge/[.04]" : ""}`}
             >
               <Icon name="tela" className="size-5 text-ink-300" />
               <span className="min-w-0 flex-1">

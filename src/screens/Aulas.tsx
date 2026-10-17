@@ -77,7 +77,7 @@ export function Aulas({ go }: { go: Go }) {
       {(busy || msg) && (
         <div
           className={`mt-6 flex items-center gap-3 rounded-xl px-4 py-3 text-sm ring-1 ring-inset ${
-            busy ? "bg-ink-800 text-ink-200 ring-white/5" : msg?.ok ? "bg-sage/10 text-sage ring-sage/25" : "bg-coral/10 text-coral ring-coral/25"
+            busy ? "bg-ink-800 text-ink-200 ring-edge/5" : msg?.ok ? "bg-sage/10 text-sage ring-sage/25" : "bg-coral/10 text-coral ring-coral/25"
           }`}
         >
           {busy && <span className="pulso size-2 rounded-full bg-lume" />}
@@ -103,7 +103,7 @@ export function Aulas({ go }: { go: Go }) {
                 type="button"
                 onClick={() => setFolder(id)}
                 className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ring-inset transition-colors ${
-                  folder === id ? "bg-lume/15 text-lume ring-lume/40" : "text-ink-300 ring-white/8 hover:text-ink-100"
+                  folder === id ? "bg-lume/15 text-lume ring-lume/40" : "text-ink-300 ring-edge/8 hover:text-ink-100"
                 }`}
               >
                 {name}
@@ -147,10 +147,10 @@ export function Aulas({ go }: { go: Go }) {
 function LessonCard({ l, go, folder }: { l: BLesson; go: Go; folder?: string }) {
   const refs = l.passages.slice(0, 3).map((p) => p.ref);
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-ink-850 ring-1 ring-white/6 transition-[transform,box-shadow] ring-inset hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.8)]">
+    <div className="group relative overflow-hidden rounded-2xl bg-ink-850 ring-1 ring-edge/6 transition-[transform,box-shadow] ring-inset hover:-translate-y-0.5 hover:shadow-[0_18px_40px_-18px_rgba(0,0,0,.8)]">
       <button type="button" onClick={() => go({ r: "aula", id: l.id })} className="block w-full text-left">
         <div className="relative aspect-[16/8] overflow-hidden bg-[radial-gradient(120%_100%_at_50%_0%,#1b2029_0%,#0a0b0e_70%)] px-5 pt-5">
-          <span className="absolute top-0 left-1/2 h-full w-24 -translate-x-1/2 bg-[linear-gradient(180deg,rgba(242,181,68,.16),transparent_80%)] [clip-path:polygon(45%_0,55%_0,100%_100%,0_100%)]" />
+          <span className="absolute top-0 left-1/2 h-full w-24 -translate-x-1/2 bg-[linear-gradient(180deg,rgba(229,72,77,.2),transparent_80%)] [clip-path:polygon(45%_0,55%_0,100%_100%,0_100%)]" />
           {refs.length ? (
             <div className="relative space-y-1">
               {refs.map((r, i) => (
@@ -182,7 +182,7 @@ function LessonCard({ l, go, folder }: { l: BLesson; go: Go; folder?: string }) 
         type="button"
         onClick={() => go({ r: "apresentar", id: l.id })}
         title="Apresentar"
-        className="absolute top-4 right-4 grid size-11 place-items-center rounded-full bg-lume text-ink-950 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 focus:opacity-100"
+        className="absolute top-4 right-4 grid size-11 place-items-center rounded-full bg-marca text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 focus:opacity-100"
       >
         <Icon name="play" className="size-5 translate-x-[1px]" />
       </button>

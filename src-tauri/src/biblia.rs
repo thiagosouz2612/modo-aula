@@ -1,9 +1,9 @@
 // ------------------------------------------------------------------
 // Bíblia (traduções, grego/hebraico e léxico).
-// Os arquivos são os mesmos da plataforma (/biblia/... em .json.gz).
-// Na primeira vez que um livro é aberto ele vem do site e fica guardado
-// na pasta do aplicativo; depois disso abre sem internet.
-// "Baixar tudo" deixa a Bíblia inteira pronta antes da aula.
+// Os arquivos são os mesmos da plataforma (/biblia/... em .json.gz) e
+// já vêm dentro do instalador (pasta "biblia" do aplicativo): funciona
+// sem internet desde a primeira vez. Se faltar algum arquivo (versão
+// nova no site), ele é baixado do site e guardado na pasta de dados.
 // ------------------------------------------------------------------
 use crate::dados::{write_atomic, Config, Pasta};
 use futures_util::{stream, StreamExt};
@@ -14,6 +14,11 @@ use std::sync::{Arc, OnceLock};
 use std::time::Duration;
 use tauri::ipc::Response;
 use tauri::{AppHandle, Emitter, State};
+
+/// pasta da Bíblia que vem com o aplicativo
+pub fn set_embutida(dir: PathBuf) {
+    let _ = EMBUTIDA.set(dir);
+}
 
 pub fn http() -> &'static reqwest::Client {
     static C: OnceLock<reqwest::Client> = OnceLock::new();
@@ -62,6 +67,11 @@ async fn get_or_fetch(pasta: &Pasta, site: &str, p: &str) -> Result<Option<Vec<u
     if let Ok(b) = tokio::fs::read(&path).await {
         return Ok(Some(b));
     }
+    if let Some(dir) = EMBUTIDA.get() {
+        if let Ok(b) = tokio::fs::read(dir.join(p)).await {
+            return Ok(Some(b));
+        }
+    }
     let Some(bytes) = fetch(site, p).await? else { return Ok(None) };
     if let Some(dir) = path.parent() {
         let _ = std::fs::create_dir_all(dir);
@@ -108,7 +118,11 @@ fn walk(dir: &std::path::Path, n: &mut usize, b: &mut u64) {
 /// o que já está guardado no computador
 #[tauri::command]
 pub fn biblia_status(pasta: State<Pasta>) -> Status {
-    let root = pasta.0.join("biblia");
+    // a que veio no aplicativo conta como guardada
+    let root = match EMBUTIDA.get() {
+        Some(d) if d.join("versoes.json").exists() => d.clone(),
+        _ => pasta.0.join("biblia"),
+    };
     let (mut arquivos, mut bytes) = (0, 0);
     walk(&root, &mut arquivos, &mut bytes);
     let mut versoes = vec![];
@@ -146,6 +160,8 @@ struct Progresso {
     erro: Option<String>,
 }
 
+static EMBUTIDA: OnceLock<PathBuf> = OnceLock::new();
+
 static BAIXANDO: AtomicBool = AtomicBool::new(false);
 
 /// baixa as versões escolhidas (e, se quiser, grego/hebraico e léxico) para usar sem internet
@@ -163,6 +179,7 @@ pub async fn baixar_biblia(
     let site = cfg.get().site;
     let pasta = Pasta(pasta.0.clone());
     let result = async {
+        // só o que não veio no aplicativo nem foi baixado antes
         let cat_bytes = get_or_fetch(&pasta, &site, "versoes.json").await?.ok_or("Catálogo da Bíblia não encontrado no site.")?;
         // o catálogo sempre vem de novo do site quando houver internet
         if let Ok(Some(fresh)) = fetch(&site, "versoes.json").await {
@@ -195,7 +212,7 @@ pub async fn baixar_biblia(
             }
         }
         // só o que ainda falta
-        list.retain(|p| !local(&pasta, p).exists());
+        list.retain(|p| !local(&pasta, p).exists() && !EMBUTIDA.get().is_some_and(|d| d.join(p).exists()));
 
         let total = list.len();
         let feitos = Arc::new(AtomicUsize::new(0));

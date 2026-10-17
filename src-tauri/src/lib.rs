@@ -24,6 +24,12 @@ pub fn run() {
             std::fs::create_dir_all(dir.join("biblia"))?;
             app.manage(dados::Pasta(dir.clone()));
             app.manage(dados::Config::load(&dir));
+            // Bíblia que vem dentro do instalador
+            let embutida = app
+                .path()
+                .resolve("biblia", tauri::path::BaseDirectory::Resource)
+                .unwrap_or_else(|_| dir.join("biblia-embutida"));
+            biblia::set_embutida(embutida);
 
             let cast = Arc::new(transmissao::Cast::new());
             app.manage(cast.clone());

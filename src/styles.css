@@ -20,28 +20,74 @@
   --font-greek: "Gentium Book Plus", "Literata Variable", serif;
   --font-hebrew: "Noto Serif Hebrew", "Times New Roman", serif;
 
-  --color-ink-950: #0b0d10;
-  --color-ink-900: #101318;
-  --color-ink-850: #14181e;
-  --color-ink-800: #1a1f27;
-  --color-ink-750: #20262f;
-  --color-ink-700: #29303b;
-  --color-ink-600: #3a4350;
-  --color-ink-500: #566070;
-  --color-ink-400: #808a99;
-  --color-ink-300: #aab2be;
-  --color-ink-200: #d2d7de;
-  --color-ink-100: #eceae4;
-  --color-paper: #f4efe6;
+  /* tons da interface (trocam entre escuro e claro, veja abaixo) */
+  --color-ink-950: #0c0d10;
+  --color-ink-900: #121317;
+  --color-ink-850: #17191e;
+  --color-ink-800: #1d1f25;
+  --color-ink-750: #24272e;
+  --color-ink-700: #2d3038;
+  --color-ink-600: #3d414b;
+  --color-ink-500: #5a5f6b;
+  --color-ink-400: #868b96;
+  --color-ink-300: #aeb2ba;
+  --color-ink-200: #d5d7dc;
+  --color-ink-100: #eeedeb;
+  --color-edge: #ffffff; /* linhas e véus sobre o fundo */
+  --color-paper: #f6f2ec;
 
-  --color-lume: #f2b544;
-  --color-lume-strong: #ffc65a;
-  --color-lume-deep: #9a6a12;
-  --color-sage: #6fc29a;
-  --color-coral: #ef7b6c;
+  /* vermelho do Curso de Teologia Bethel */
+  --color-marca: #a91d1e; /* botões e fundos cheios */
+  --color-marca-forte: #c02426;
+  --color-lume: #ec5a5c; /* textos e detalhes em vermelho (mais claro no fundo escuro) */
+  --color-sage: #5fbf8f;
+  --color-coral: #f0806f;
   --color-sky: #79a8f5;
+}
 
-  --radius-xl2: 1.1rem;
+/* tema escuro (padrão) e claro do aplicativo; o palco usa um ou outro conforme o fundo da projeção */
+:root,
+.escuro {
+  color-scheme: dark;
+}
+.claro {
+  color-scheme: light;
+  --color-ink-950: #f6f4f1;
+  --color-ink-900: #ffffff;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #f2efeb;
+  --color-ink-750: #ece8e3;
+  --color-ink-700: #e3ded7;
+  --color-ink-600: #cfc8bf;
+  --color-ink-500: #a49b91;
+  --color-ink-400: #6f675e;
+  --color-ink-300: #4d4740;
+  --color-ink-200: #2f2b27;
+  --color-ink-100: #1d1b18;
+  --color-edge: #2a1a14;
+  --color-lume: #a91d1e;
+  --color-sage: #2f8a55;
+  --color-coral: #c0392b;
+  --color-sky: #2f6fd1;
+}
+.escuro {
+  --color-ink-950: #0c0d10;
+  --color-ink-900: #121317;
+  --color-ink-850: #17191e;
+  --color-ink-800: #1d1f25;
+  --color-ink-750: #24272e;
+  --color-ink-700: #2d3038;
+  --color-ink-600: #3d414b;
+  --color-ink-500: #5a5f6b;
+  --color-ink-400: #868b96;
+  --color-ink-300: #aeb2ba;
+  --color-ink-200: #d5d7dc;
+  --color-ink-100: #eeedeb;
+  --color-edge: #ffffff;
+  --color-lume: #ec5a5c;
+  --color-sage: #5fbf8f;
+  --color-coral: #f0806f;
+  --color-sky: #79a8f5;
 }
 
 html,
@@ -54,6 +100,7 @@ body {
   background: var(--color-ink-950);
   color: var(--color-ink-100);
   font-family: var(--font-sans);
+  transition: background-color 0.2s;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11", "ss01";
   user-select: none;
@@ -125,10 +172,7 @@ body.tela.mouse {
   cursor: default;
 }
 
-/* listas de opção no tema escuro (Windows e Linux) */
-:root {
-  color-scheme: dark;
-}
+/* listas de opção no tema do aplicativo (Windows e Linux) */
 option,
 optgroup {
   background: var(--color-ink-850);

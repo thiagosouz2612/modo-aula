@@ -2,32 +2,35 @@
 // Peças da interface: logo, botões, ícones, campos.
 // ------------------------------------------------------------------
 import type { ButtonHTMLAttributes, CSSProperties, ReactNode } from "react";
+import { CURSO, EMBLEMA, TEOLOGIA } from "./marca";
 
+/** emblema do curso (círculo com a cruz), na cor do texto */
 export function Logo({ className = "", style }: { className?: string; style?: CSSProperties }) {
   return (
-    <svg viewBox="140 120 744 744" className={className} style={style} aria-hidden="true">
-      <defs>
-        <linearGradient id="lg-beam" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#f5b94a" stopOpacity="0" />
-          <stop offset="1" stopColor="#f5b94a" stopOpacity=".95" />
-        </linearGradient>
-      </defs>
-      <path d="M512 170 L380 560 H644 Z" fill="url(#lg-beam)" opacity=".85" />
-      <path
-        d="M220 560 C320 520 430 528 512 590 C594 528 704 520 804 560 V790 C704 752 594 760 512 820 C430 760 320 752 220 790 Z"
-        fill="#f4efe6"
-      />
-      <path d="M512 590 V820" stroke="#0d0f13" strokeWidth="18" strokeLinecap="round" />
-      <circle cx="512" cy="170" r="34" fill="#f5b94a" />
+    <svg viewBox="0 0 285 287" className={className} style={style} aria-hidden="true">
+      <path d={EMBLEMA} fill="currentColor" />
+    </svg>
+  );
+}
+
+/** logo completo: "branco" para fundo escuro, "cor" para fundo claro */
+export function LogoCompleto({ tom = "cor", className = "", style }: { tom?: "cor" | "branco"; className?: string; style?: CSSProperties }) {
+  const red = tom === "branco" ? "#ffffff" : "#a91d1e";
+  const ink = tom === "branco" ? "#ffffff" : "#1d1d1b";
+  return (
+    <svg viewBox="0 0 928 287" className={className} style={style} role="img" aria-label="Curso de Teologia Bethel">
+      <path d={EMBLEMA} fill={red} />
+      <path d={CURSO} fill={ink} />
+      <path d={TEOLOGIA} fill={red} />
     </svg>
   );
 }
 
 type Variant = "primary" | "ghost" | "soft" | "danger" | "live";
 const VARIANT: Record<Variant, string> = {
-  primary: "bg-lume text-ink-950 hover:bg-lume-strong shadow-[0_6px_24px_-8px_rgba(242,181,68,.55)]",
-  soft: "bg-ink-750 text-ink-100 hover:bg-ink-700 ring-1 ring-inset ring-white/5",
-  ghost: "text-ink-300 hover:text-ink-100 hover:bg-white/5",
+  primary: "bg-marca text-white hover:bg-marca-forte shadow-[0_6px_24px_-10px_rgba(169,29,30,.7)]",
+  soft: "bg-ink-750 text-ink-100 hover:bg-ink-700 ring-1 ring-inset ring-edge/5",
+  ghost: "text-ink-300 hover:text-ink-100 hover:bg-edge/5",
   danger: "text-coral hover:bg-coral/10",
   live: "bg-sage/15 text-sage ring-1 ring-inset ring-sage/30 hover:bg-sage/20",
 };
@@ -53,7 +56,7 @@ export function Btn({
 
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="inline-grid h-5 min-w-5 place-items-center rounded-md bg-ink-700 px-1.5 font-sans text-[11px] font-semibold text-ink-300 ring-1 ring-white/10 ring-inset">
+    <kbd className="inline-grid h-5 min-w-5 place-items-center rounded-md bg-ink-700 px-1.5 font-sans text-[11px] font-semibold text-ink-300 ring-1 ring-edge/10 ring-inset">
       {children}
     </kbd>
   );
@@ -62,7 +65,7 @@ export function Kbd({ children }: { children: ReactNode }) {
 export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: ReactNode }) {
   return (
     <button type="button" role="switch" aria-checked={on} onClick={() => onChange(!on)} className="group inline-flex items-center gap-2.5 text-sm text-ink-200">
-      <span className={`relative h-5 w-9 rounded-full transition-colors ${on ? "bg-lume" : "bg-ink-600"}`}>
+      <span className={`relative h-5 w-9 rounded-full transition-colors ${on ? "bg-marca" : "bg-ink-600"}`}>
         <span className={`absolute top-0.5 size-4 rounded-full bg-white shadow transition-[left] ${on ? "left-[18px]" : "left-0.5"}`} />
       </span>
       {label}
@@ -72,7 +75,7 @@ export function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boo
 
 export function Seg<T extends string>({ value, options, onChange, size = "md" }: { value: T; options: [T, ReactNode][]; onChange: (v: T) => void; size?: "sm" | "md" }) {
   return (
-    <div className="inline-flex rounded-xl bg-ink-850 p-1 ring-1 ring-white/5 ring-inset">
+    <div className="inline-flex rounded-xl bg-ink-850 p-1 ring-1 ring-edge/5 ring-inset">
       {options.map(([v, label]) => (
         <button
           key={v}
@@ -90,9 +93,9 @@ export function Seg<T extends string>({ value, options, onChange, size = "md" }:
 }
 
 export const selCls =
-  "h-10 rounded-xl bg-ink-850 px-3 text-sm text-ink-100 ring-1 ring-white/8 ring-inset focus:ring-lume/60 focus:outline-none";
+  "h-10 rounded-xl bg-ink-850 px-3 text-sm text-ink-100 ring-1 ring-edge/8 ring-inset focus:ring-lume/60 focus:outline-none";
 export const inputCls =
-  "h-10 w-full rounded-xl bg-ink-850 px-3.5 text-sm text-ink-100 ring-1 ring-white/8 ring-inset placeholder:text-ink-500 focus:ring-lume/60 focus:outline-none";
+  "h-10 w-full rounded-xl bg-ink-850 px-3.5 text-sm text-ink-100 ring-1 ring-edge/8 ring-inset placeholder:text-ink-500 focus:ring-lume/60 focus:outline-none";
 
 export function Field({ label, hint, children }: { label: ReactNode; hint?: ReactNode; children: ReactNode }) {
   return (
@@ -105,7 +108,7 @@ export function Field({ label, hint, children }: { label: ReactNode; hint?: Reac
 }
 
 export function Card({ className = "", children }: { className?: string; children: ReactNode }) {
-  return <div className={`rounded-2xl bg-ink-850 ring-1 ring-white/6 ring-inset ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-ink-850 ring-1 ring-edge/6 ring-inset ${className}`}>{children}</div>;
 }
 
 // ---------------- ícones (traço 1.8) ----------------
@@ -164,6 +167,13 @@ const P: Record<string, ReactNode> = {
   preto: <rect x="4" y="5" width="16" height="14" rx="2" fill="currentColor" />,
   qr: <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z" />,
   copiar: <path d="M9 9h10v11H9zM5 15V4h10" />,
+  sol: (
+    <>
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2.5v2M12 19.5v2M4.6 4.6l1.4 1.4M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4" />
+    </>
+  ),
+  lua: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
 };
 
 export function Icon({ name, className = "size-[18px]" }: { name: keyof typeof P | string; className?: string }) {

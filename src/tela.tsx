@@ -114,7 +114,7 @@ function App() {
         <button
           type="button"
           onClick={full}
-          className="absolute right-4 bottom-4 rounded-full bg-black/70 px-3.5 py-2 text-xs font-semibold text-ink-200 ring-1 ring-white/10 hover:bg-black/90"
+          className="absolute right-4 bottom-4 rounded-full bg-black/70 px-3.5 py-2 text-xs font-semibold text-ink-200 ring-1 ring-edge/10 hover:bg-black/90"
         >
           {document.fullscreenElement ? "Sair da tela cheia" : "Tela cheia (ou dois cliques)"}
         </button>

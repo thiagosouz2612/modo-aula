@@ -28,12 +28,10 @@ export function Biblia() {
       <div className="grid h-full place-items-center p-10 text-center">
         <div>
           <Icon name="biblia" className="mx-auto size-10 text-ink-500" />
-          <p className="mt-4 font-serif text-xl font-semibold">{err ? "A Bíblia ainda não está neste computador" : "Abrindo a Bíblia…"}</p>
+          <p className="mt-4 font-serif text-xl font-semibold">{err ? "Não foi possível abrir a Bíblia" : "Abrindo a Bíblia…"}</p>
           {err && (
             <>
-              <p className="mx-auto mt-2 max-w-md text-sm text-ink-400">
-                Na primeira vez, o Modo Aula baixa a Bíblia da plataforma (precisa de internet). Depois funciona sem internet. Em Ajustes dá para baixar tudo de uma vez.
-              </p>
+              <p className="mx-auto mt-2 max-w-md text-sm text-ink-400">{err}</p>
               <Btn className="mt-5" onClick={retry}>
                 Tentar de novo
               </Btn>
@@ -117,7 +115,7 @@ function Reader({ cat }: { cat: Catalog }) {
   return (
     <div className="flex h-full">
       <div className="min-w-0 flex-1 overflow-y-auto">
-        <div className="sticky top-0 z-10 border-b border-white/5 bg-ink-950/90 px-8 py-4 backdrop-blur">
+        <div className="sticky top-0 z-10 border-b border-edge/5 bg-ink-950/90 px-8 py-4 backdrop-blur">
           <div className="mx-auto flex max-w-[860px] flex-wrap items-center gap-2">
             <div className="relative w-56">
               <Icon name="busca" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-500" />
@@ -191,7 +189,7 @@ function Reader({ cat }: { cat: Catalog }) {
                   ))}
                   <span
                     onClick={(e) => vista === "traducao" && click(n, e.shiftKey)}
-                    className={`rounded-md transition-colors ${on ? "bg-lume/15 ring-1 ring-lume/30" : vista === "traducao" ? "cursor-pointer hover:bg-white/[.04]" : ""}`}
+                    className={`rounded-md transition-colors ${on ? "bg-lume/15 ring-1 ring-lume/30" : vista === "traducao" ? "cursor-pointer hover:bg-edge/[.04]" : ""}`}
                   >
                     {vista !== "interlinear" && (
                       <sup onClick={(e) => (e.stopPropagation(), click(n, e.shiftKey))} className="mx-1 cursor-pointer font-sans text-[11px] font-bold text-lume">
@@ -212,7 +210,7 @@ function Reader({ cat }: { cat: Catalog }) {
                       <span className="flex flex-wrap items-start gap-x-4 gap-y-3 py-2">
                         <sup className="pt-3 font-sans text-[11px] font-bold text-lume">{n}</sup>
                         {orig?.[String(n)]?.map((w, i) => (
-                          <button key={i} type="button" onClick={() => setWord(w)} className={`flex flex-col items-center rounded-lg px-1.5 py-1 hover:bg-white/5 ${word === w ? "bg-lume/15" : ""}`}>
+                          <button key={i} type="button" onClick={() => setWord(w)} className={`flex flex-col items-center rounded-lg px-1.5 py-1 hover:bg-edge/5 ${word === w ? "bg-lume/15" : ""}`}>
                             <span>{cleanWord(w[0])}</span>
                             <span dir="ltr" className="font-sans text-[11px] text-ink-400 italic">{cleanTranslit(w[1], heb)}</span>
                             <span dir="ltr" className="font-sans text-[11px] font-semibold text-lume">{splitGloss(w[4]).main}</span>
@@ -297,7 +295,7 @@ function WordPanel({ w, heb, onClose }: { w: OrigWord; heb: boolean; onClose: ()
   }, [w[2]]);
   const g = splitGloss(w[4]);
   return (
-    <aside className="w-[360px] shrink-0 overflow-y-auto border-l border-white/5 bg-ink-900 p-6">
+    <aside className="w-[360px] shrink-0 overflow-y-auto border-l border-edge/5 bg-ink-900 p-6">
       <div className="flex items-start justify-between">
         <p className="text-[11px] font-bold tracking-[0.2em] text-ink-400 uppercase">Estudo da palavra</p>
         <button type="button" onClick={onClose} className="text-ink-400 hover:text-ink-100" aria-label="Fechar">

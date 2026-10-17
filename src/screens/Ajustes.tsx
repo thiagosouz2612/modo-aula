@@ -36,7 +36,7 @@ export function Ajustes({ go, aba: inicial }: { go: Go; aba?: string }) {
               type="button"
               onClick={() => setAba(id)}
               className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors ${
-                aba === id ? "bg-white/[.06] text-ink-100" : "text-ink-400 hover:text-ink-200"
+                aba === id ? "bg-edge/[.06] text-ink-100" : "text-ink-400 hover:text-ink-200"
               }`}
             >
               <Icon name={icon} className={`size-4 ${aba === id ? "text-lume" : ""}`} /> {label}
@@ -87,9 +87,12 @@ function Projecao() {
   };
   return (
     <>
+      <Section title="Cores do aplicativo" desc="Só muda a tela do professor. A projeção tem a sua própria escolha logo abaixo.">
+        <Seg value={prefs.aparencia} options={[["escuro", "Escuro"], ["claro", "Claro"]]} onChange={(aparencia) => store.setPrefs({ aparencia })} />
+      </Section>
       <Section title="Aparência da projeção" desc="Vale para o projetor e para todas as telas da rede.">
         <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
-          <div className="aspect-video overflow-hidden rounded-xl ring-1 ring-white/10">
+          <div className="aspect-video overflow-hidden rounded-xl ring-1 ring-edge/10">
             <Palco tela={sample} mini />
           </div>
           <div className="space-y-5">
@@ -97,7 +100,7 @@ function Projecao() {
               <Seg value={prefs.tema} options={[["noite", "Escuro"], ["papel", "Claro"]]} onChange={(tema) => set({ tema })} />
             </Field>
             <Field label={`Tamanho da letra · ${Math.round(prefs.escala * 100)}%`} hint="O texto sempre se ajusta para caber; isto limita o tamanho máximo.">
-              <input type="range" min={0.7} max={1.3} step={0.05} value={prefs.escala} onChange={(e) => set({ escala: Number(e.target.value) })} className="w-full accent-[#f2b544]" />
+              <input type="range" min={0.7} max={1.3} step={0.05} value={prefs.escala} onChange={(e) => set({ escala: Number(e.target.value) })} className="w-full accent-[#a91d1e]" />
             </Field>
           </div>
         </div>
@@ -317,12 +320,12 @@ function BibliaOffline() {
   return (
     <Section
       title="Bíblia sem internet"
-      desc="Cada livro é baixado da plataforma na primeira vez que é aberto e fica guardado. Para não depender da internet na sala, baixe tudo antes."
+      desc="A Bíblia completa (todas as versões, grego, hebraico e léxico) já vem instalada com o aplicativo e funciona sem internet. Use o botão abaixo só se o site ganhar uma versão nova."
     >
       <Card className="p-6">
         {st && (
           <p className="text-sm text-ink-300">
-            Neste computador: <b className="text-ink-100">{fmtBytes(st.bytes)}</b> em {st.arquivos} arquivos
+            Instalada: <b className="text-ink-100">{fmtBytes(st.bytes)}</b> em {st.arquivos} arquivos
             {st.versoes.length ? ` · versões completas: ${st.versoes.join(", ")}` : ""}
             {st.originais ? ` · ${st.originais} capítulos do original` : ""}.
           </p>
@@ -340,7 +343,7 @@ function BibliaOffline() {
                   title={v.name}
                   onClick={() => setPick(on_ ? pick.filter((x) => x !== v.id) : [...pick, v.id])}
                   className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-bold ring-1 ring-inset ${
-                    on_ ? "bg-lume/15 text-lume ring-lume/35" : "text-ink-300 ring-white/8 hover:text-ink-100"
+                    on_ ? "bg-lume/15 text-lume ring-lume/35" : "text-ink-300 ring-edge/8 hover:text-ink-100"
                   }`}
                 >
                   {done && <Icon name="check" className="size-3.5 text-sage" />}
@@ -358,18 +361,8 @@ function BibliaOffline() {
         <p className="mt-3 text-xs text-ink-500">Cada versão ocupa cerca de 1,5 MB.</p>
         <div className="mt-5 flex items-center gap-3">
           <Btn variant="primary" onClick={() => void start()} disabled={Boolean(prog) || (!pick.length && !orig)}>
-            <Icon name="baixar" /> Baixar agora
+            <Icon name="baixar" /> Buscar no site o que faltar
           </Btn>
-          {st && st.arquivos > 0 && !prog && (
-            <Btn
-              variant="danger"
-              onClick={() => {
-                if (confirm("Apagar a Bíblia guardada neste computador? Ela volta a ser baixada quando for aberta.")) void native.apagarBiblia().then(reload);
-              }}
-            >
-              Apagar a guardada
-            </Btn>
-          )}
         </div>
         {prog && (
           <div className="mt-5">
@@ -378,7 +371,7 @@ function BibliaOffline() {
               <span>{prog.total ? Math.round((prog.feitos / prog.total) * 100) : 0}%</span>
             </div>
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-800">
-              <div className="h-full rounded-full bg-lume transition-[width]" style={{ width: `${prog.total ? Math.max(3, (prog.feitos / prog.total) * 100) : 3}%` }} />
+              <div className="h-full rounded-full bg-marca transition-[width]" style={{ width: `${prog.total ? Math.max(3, (prog.feitos / prog.total) * 100) : 3}%` }} />
             </div>
           </div>
         )}
