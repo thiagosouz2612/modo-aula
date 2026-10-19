@@ -13,6 +13,7 @@ import { Apresentar } from "./screens/Apresentar";
 import { AulaEditor } from "./screens/AulaEditor";
 import { Aulas } from "./screens/Aulas";
 import { Biblia } from "./screens/Biblia";
+import { Falha } from "./components/Falha";
 
 export type Rota =
   | { r: "aulas" }
@@ -47,18 +48,26 @@ function App() {
   }, [porta]);
 
   if (!loaded) return <div className="grid h-full place-items-center"><Logo className="pulso size-14 text-lume" /></div>;
-  if (rota.r === "apresentar") return <Apresentar id={rota.id} go={go} />;
+  if (rota.r === "apresentar")
+    return (
+      <Falha key="apresentar" onVoltar={() => go({ r: "aulas" })}>
+        <Apresentar id={rota.id} go={go} />
+      </Falha>
+    );
 
   return (
     <div className="flex h-full">
       <Rail rota={rota} go={go} />
       <main className="min-w-0 flex-1 overflow-y-auto">
+        {/* cada tela tem a sua proteção: trocar de tela já volta ao normal */}
+        <Falha key={rota.r + ("id" in rota ? rota.id : "")} onVoltar={() => go({ r: "aulas" })}>
         {rota.r === "aulas" && <Aulas go={go} />}
         {rota.r === "aula" && <AulaEditor id={rota.id} go={go} />}
         {rota.r === "biblia" && <Biblia />}
         {rota.r === "roteiros" && <Roteiros go={go} />}
         {rota.r === "roteiro" && <RoteiroScreen key={rota.id} id={rota.id} go={go} />}
         {rota.r === "ajustes" && <Ajustes go={go} aba={rota.aba} />}
+        </Falha>
       </main>
     </div>
   );
@@ -133,6 +142,8 @@ function ThemeButton() {
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <App />
+    <Falha>
+      <App />
+    </Falha>
   </StrictMode>,
 );

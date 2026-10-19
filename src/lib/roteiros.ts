@@ -43,6 +43,32 @@ export const KINDS: Record<Kind, { label: string; plural: string; icon: string; 
 
 export const isKind = (k: unknown): k is Kind => typeof k === "string" && k in KINDS;
 
+/** completa o que faltar num roteiro (dados antigos, da plataforma ou de uma cópia) */
+function normNote(n: Partial<RNote> & { id: string }): RNote {
+  const agora = new Date().toISOString();
+  const str = (v: unknown, d = "") => (typeof v === "string" ? v : d);
+  return {
+    ...n,
+    id: String(n.id),
+    title: str(n.title),
+    kind: isKind(n.kind) ? n.kind : "outro",
+    icon: typeof n.icon === "string" && n.icon ? n.icon : undefined,
+    folderId: typeof n.folderId === "string" && n.folderId ? n.folderId : undefined,
+    createdAt: str(n.createdAt, agora),
+    updatedAt: str(n.updatedAt, str(n.createdAt, agora)),
+    excerpt: str(n.excerpt),
+    words: typeof n.words === "number" && Number.isFinite(n.words) ? n.words : 0,
+  };
+}
+const normNotes = (ns: unknown): RNote[] =>
+  Array.isArray(ns) ? ns.filter((n): n is RNote => !!n && typeof n === "object" && typeof (n as RNote).id === "string" && !!(n as RNote).id).map(normNote) : [];
+const normFolders = (fs: unknown): RFolder[] =>
+  Array.isArray(fs)
+    ? fs
+        .filter((f): f is RFolder => !!f && typeof f === "object" && typeof (f as RFolder).id === "string")
+        .map((f) => ({ ...f, name: typeof f.name === "string" && f.name ? f.name : "Pasta", createdAt: typeof f.createdAt === "string" ? f.createdAt : new Date().toISOString() }))
+    : [];
+
 
 type State = { status: "loading" | "ready"; index: RIndex; sync: "idle" | "syncing" | "ok" | "offline" | "error"; syncMsg?: string; at?: string };
 let state: State = { status: "loading", index: EMPTY_INDEX, sync: "idle" };
@@ -77,7 +103,7 @@ export async function loadRoteiros() {
       const extra = raw as { pastasMudadas?: string[]; pastasApagadas?: string[] };
       pastasMudadas = extra.pastasMudadas ?? [];
       pastasApagadas = extra.pastasApagadas ?? [];
-      set({ status: "ready", index: { v: 1, folders: raw.folders ?? [], notes: raw.notes } });
+      set({ status: "ready", index: { v: 1, folders: normFolders(raw.folders), notes: normNotes(raw.notes) } });
       return;
     }
   } catch {
@@ -176,6 +202,7 @@ export const useRoteirosState = () => state;
 export async function restaurarRoteiros(index: RIndex | undefined, textos: Record<string, string>) {
   await loadRoteiros();
   if (!index?.notes) return 0;
+  index = { v: 1, folders: normFolders(index.folders), notes: normNotes(index.notes) };
   const local = new Map(state.index.notes.map((n) => [n.id, n]));
   const notes = [...state.index.notes];
   let n = 0;
@@ -219,7 +246,7 @@ async function doSync() {
   let remote: RIndex;
   try {
     const r = JSON.parse(await native.plataformaRoteiros()) as { index?: RIndex };
-    remote = { v: 1, folders: r.index?.folders ?? [], notes: r.index?.notes ?? [] };
+    remote = { v: 1, folders: normFolders(r.index?.folders), notes: normNotes(r.index?.notes) };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     return set({ sync: /entre com o seu login|sessão/i.test(msg) ? "error" : "offline", syncMsg: msg });

@@ -15,13 +15,38 @@ function emit() {
   for (const s of subs) s();
 }
 
+/** completa o que faltar numa aula (aulas antigas, da plataforma ou de uma cópia) */
+export function normLesson(l: Partial<BLesson> & { id: string }): BLesson {
+  const agora = new Date().toISOString();
+  const passages = (Array.isArray(l.passages) ? l.passages : [])
+    .filter((p) => p && typeof p === "object" && typeof p.ref === "string")
+    .map((p) => ({
+      ...p,
+      id: typeof p.id === "string" && p.id ? p.id : Math.random().toString(36).slice(2, 10),
+      versions: Array.isArray(p.versions) && p.versions.length ? p.versions.filter((v) => typeof v === "string") : [DEFAULT_PREFS.versao],
+      view: p.view ?? "traducao",
+    }));
+  return {
+    ...l,
+    id: String(l.id),
+    title: typeof l.title === "string" ? l.title : "",
+    passages,
+    createdAt: typeof l.createdAt === "string" ? l.createdAt : agora,
+    updatedAt: typeof l.updatedAt === "string" ? l.updatedAt : agora,
+  };
+}
+const normLessons = (ls: unknown): BLesson[] =>
+  Array.isArray(ls) ? ls.filter((l) => l && typeof l === "object" && typeof l.id === "string" && l.id).map(normLesson) : [];
+const normFolders = (fs: unknown): BFolder[] =>
+  Array.isArray(fs) ? fs.filter((f) => f && typeof f === "object" && typeof f.id === "string").map((f) => ({ ...f, name: typeof f.name === "string" && f.name ? f.name : "Pasta" })) : [];
+
 export async function loadStore() {
   try {
     const raw = JSON.parse(await native.lerDados()) as Partial<Store> | null;
     if (raw && typeof raw === "object") {
       state = {
-        lessons: Array.isArray(raw.lessons) ? raw.lessons : [],
-        folders: Array.isArray(raw.folders) ? raw.folders : [],
+        lessons: normLessons(raw.lessons),
+        folders: normFolders(raw.folders),
         prefs: { ...DEFAULT_PREFS, ...(raw.prefs ?? {}) },
         versao: 1,
       };
@@ -93,6 +118,8 @@ export const store = {
   },
   /** junta as aulas trazidas da plataforma (a da plataforma substitui a de mesmo id) */
   merge(lessons: BLesson[], folders: BFolder[]) {
+    lessons = normLessons(lessons);
+    folders = normFolders(folders);
     const ids = new Set(lessons.map((l) => l.id));
     const fids = new Set(folders.map((f) => f.id));
     // a pasta e o roteiro escolhidos aqui continuam valendo

@@ -248,7 +248,7 @@ export function Roteiros({ go }: { go: Go }) {
 function NoteCard({ n, onOpen }: { n: RNote; onOpen: () => void }) {
   const k = KINDS[n.kind];
   return (
-    <button type="button" onClick={onOpen} className="group flex flex-col rounded-2xl bg-ink-850 p-5 text-left ring-1 ring-edge/6 transition-transform ring-inset hover:-translate-y-0.5">
+    <button type="button" onClick={onOpen} className="group flex h-full w-full flex-col rounded-2xl bg-ink-850 p-5 text-left ring-1 ring-edge/6 transition-transform ring-inset hover:-translate-y-0.5">
       <div className="flex items-start justify-between gap-3">
         <span className="text-3xl">{n.icon || k.icon}</span>
         {n.pinned && <span className="mr-9 text-xs text-lume">📌</span>}
