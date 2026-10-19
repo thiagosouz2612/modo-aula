@@ -36,6 +36,9 @@ export type Prefs = {
   vistaRoteiros: "grade" | "lista";
   versoesNovas?: string[]; // versões dos textos novos da aula
   vistaNova?: BView; // forma inicial dos textos novos
+  bibliaStrong?: boolean; // Bíblia: números de Strong na tradução
+  bibliaTitulos?: boolean; // Bíblia: títulos das perícopes
+  bibliaTam?: number; // Bíblia: tamanho do texto (px)
 };
 
 export type Store = { lessons: BLesson[]; folders: BFolder[]; prefs: Prefs; versao: 1 };

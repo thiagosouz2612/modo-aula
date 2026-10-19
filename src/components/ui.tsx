@@ -183,6 +183,7 @@ const P: Record<string, ReactNode> = {
   ),
   pausa: <path d="M8 5v14M16 5v14" />,
   zerar: <path d="M4 12a8 8 0 1 0 2.4-5.7M4 4v4h4" />,
+  chevron: <path d="M6 9l6 6 6-6" />,
   lua: <path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z" />,
 };
 
