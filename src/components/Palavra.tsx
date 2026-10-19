@@ -111,7 +111,9 @@ export function WordPanel({
   const info = given ?? own;
   const { entry, pt, busy, err, translate, strong, morph, gloss, parts, heb, text, translit, meaning, here, lemma } = info;
   const [ingles, setIngles] = useState(false);
-  useEffect(() => setIngles(false), [strong]);
+  useEffect(() => {
+    setIngles(false);
+  }, [strong]);
   const tentou = useRef("");
   useEffect(() => {
     if (!autoTraduzir || !entry?.d || pt || busy || tentou.current === strong) return;

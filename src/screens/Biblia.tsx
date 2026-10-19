@@ -96,7 +96,9 @@ function Reader({ cat }: { cat: Catalog }) {
   }, [book, chapter, versao, trad, strongOn]);
 
   // capítulo novo: volta ao topo
-  useEffect(() => scroller.current?.scrollTo({ top: 0 }), [book, chapter]);
+  useEffect(() => {
+    scroller.current?.scrollTo({ top: 0 });
+  }, [book, chapter]);
 
   const heads = useMemo(() => (titulosOn ? headingsByVerse(titles, chapter) : new Map<number, Heading[]>()), [titles, chapter, titulosOn]);
   const verses: number[] = trad ? (text ?? []).map((_, i) => i + 1) : Object.keys(orig ?? {}).map(Number).sort((a, b) => a - b);

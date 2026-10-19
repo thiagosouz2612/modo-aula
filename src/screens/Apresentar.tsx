@@ -160,7 +160,9 @@ export function Apresentar({ id, go }: { id: string; go: Go }) {
   };
 
   // mudou o texto: fecha a palavra
-  useEffect(() => setWord(null), [passage?.ref, vista, cur, track, capa]);
+  useEffect(() => {
+    setWord(null);
+  }, [passage?.ref, vista, cur, track, capa]);
 
   // clique numa palavra do texto (original, interlinear ou Strong)
   const onWord: OnWord = (n, i) => {
@@ -719,7 +721,9 @@ function WordSide({
 }) {
   const info = useWordInfo(word);
   const resumo = JSON.stringify(on ? palavraDe(info, true) : null);
-  useEffect(() => onPalavra(JSON.parse(resumo)), [resumo]);
+  useEffect(() => {
+    onPalavra(JSON.parse(resumo));
+  }, [resumo]);
   useEffect(() => () => onPalavra(null), []);
   return <WordPanel word={word} refLabel={refLabel} info={info} onClose={onClose} onJump={onJump} onProjetar={setOn} projetando={on} onRef={onRef} autoTraduzir />;
 }
