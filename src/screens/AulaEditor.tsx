@@ -10,7 +10,7 @@ import { fmtBytes, native } from "../lib/native";
 import { countPages, forgetDeck, openDeck, renderPage } from "../lib/pdf";
 import { loadPassage, vistaOf, VISTAS } from "../lib/scene";
 import { store, useStore } from "../lib/store";
-import { uid, type BLesson, type BPassage } from "../lib/types";
+import { uid, type BLesson, type BPassage, type BView } from "../lib/types";
 import { createNote, KINDS, loadRoteiros, speakMinutes, useRoteiros } from "../lib/roteiros";
 
 export function AulaEditor({ id, go }: { id: string; go: Go }) {
@@ -82,7 +82,13 @@ export function AulaEditor({ id, go }: { id: string; go: Go }) {
           <h2 className="mb-3 flex items-center gap-2 text-xs font-bold tracking-[0.2em] text-ink-300 uppercase">
             <Icon name="biblia" className="size-4 text-lume" /> Textos bíblicos
           </h2>
-          <AddPassage cat={cat} catErr={err} onAdd={(p) => save({ passages: [...lesson.passages, p] })} />
+          <AddPassage
+            cat={cat}
+            catErr={err}
+            total={lesson.passages.length}
+            onAdd={(ps) => save({ passages: [...lesson.passages, ...ps] })}
+            onApplyAll={(versions, view) => save({ passages: lesson.passages.map((p) => ({ ...p, versions, view })) })}
+          />
           <div className="mt-3 space-y-2.5">
             {lesson.passages.map((p, i) => (
               <PassageRow
@@ -122,31 +128,38 @@ export function AulaEditor({ id, go }: { id: string; go: Go }) {
 
 // ---------------- adicionar texto ----------------
 
-function AddPassage({ cat, catErr, onAdd }: { cat: Catalog | null; catErr: string; onAdd: (p: BPassage) => void }) {
-  const versao = useStore((s) => s.prefs.versao);
+function AddPassage({
+  cat, catErr, onAdd, onApplyAll, total,
+}: { cat: Catalog | null; catErr: string; onAdd: (ps: BPassage[]) => void; onApplyAll: (versions: string[], view: BView) => void; total: number }) {
+  const prefs = useStore((s) => s.prefs);
+  const versions = prefs.versoesNovas?.length ? prefs.versoesNovas : [prefs.versao];
+  const view = prefs.vistaNova ?? "traducao";
   const [text, setText] = useState("");
   const q = useDebounced(text.trim(), 200);
-  const ref = cat && q ? parseRef(q, cat) : null;
+  // várias referências de uma vez: "Jo 3:16; Rm 5:8; Ef 2:8-10"
+  const partes = q.split(/\s*[;\n]\s*/).map((x) => x.trim()).filter(Boolean);
+  const refs = cat ? partes.map((t) => ({ t, r: parseRef(t, cat) })) : [];
+  const validas = refs.filter((x) => x.r);
+  const ruins = refs.filter((x) => !x.r);
   const [preview, setPreview] = useState("");
+  const [aplicado, setAplicado] = useState(false);
 
   useEffect(() => {
     setPreview("");
-    if (!ref) return;
+    if (validas.length !== 1) return;
     let dead = false;
-    loadPassage(q, versao, "traducao", cat!)
+    loadPassage(validas[0].t, versions[0], "traducao", cat!)
       .then((l) => !dead && setPreview(l.verses.map((v) => v.text).join(" ").slice(0, 220)))
       .catch(() => {});
     return () => {
       dead = true;
     };
-  }, [q, versao, cat, ref?.book.id]);
+  }, [q, versions[0], cat]);
 
   const add = () => {
-    const t = text.trim();
-    if (!t) return;
-    const r = cat ? parseRef(t, cat) : null;
-    if (cat && !r) return;
-    onAdd({ id: uid(), ref: r ? refLabel(r).replace(/^(\S+)/, (m) => m) : t, versions: [versao], view: "traducao" });
+    const all = cat ? text.split(/\s*[;\n]\s*/).map((t) => t.trim()).filter(Boolean).map((t) => parseRef(t, cat)) : [];
+    if (!all.length || all.some((r) => !r)) return;
+    onAdd(all.map((r) => ({ id: uid(), ref: refLabel(r!), versions, view })));
     setText("");
   };
 
@@ -159,27 +172,55 @@ function AddPassage({ cat, catErr, onAdd }: { cat: Catalog | null; catErr: strin
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && add()}
-            placeholder="Referência: Jo 3:16-18, Sl 23, Romanos 5.1"
+            placeholder="Jo 3:16-18; Rm 5:8; Ef 2:8-10  (separe com ;)"
             className={`${inputCls} pl-9`}
           />
         </div>
-        <Btn variant="primary" onClick={add} disabled={!text.trim() || (Boolean(cat) && !ref)}>
-          <Icon name="mais" /> Adicionar
+        <Btn variant="primary" onClick={add} disabled={!validas.length || ruins.length > 0}>
+          <Icon name="mais" /> {validas.length > 1 ? `Adicionar ${validas.length}` : "Adicionar"}
         </Btn>
       </div>
       {q && (
         <p className="mt-2.5 px-1 text-[13px] leading-relaxed text-ink-400">
           {!cat ? (
             <span className="text-coral">{catErr || "Carregando a Bíblia…"}</span>
-          ) : ref ? (
+          ) : ruins.length ? (
+            <span className="text-coral">Não entendi: {ruins.map((x) => `“${x.t}”`).join(", ")}. Ex.: Jo 3:16, 1Co 13:4-7, Sl 23.</span>
+          ) : validas.length === 1 ? (
             <>
-              <span className="font-semibold text-ink-100">{refLabel(ref)}</span>
+              <span className="font-semibold text-ink-100">{refLabel(validas[0].r!)}</span>
               {preview && <span className="font-serif"> — {preview}…</span>}
             </>
           ) : (
-            <span className="text-coral">Não entendi a referência. Ex.: Jo 3:16, 1Co 13:4-7, Sl 23.</span>
+            <span className="font-semibold text-ink-100">{validas.map((x) => refLabel(x.r!)).join(" · ")}</span>
           )}
         </p>
+      )}
+      <div className="mt-3 grid gap-3 border-t border-edge/8 px-1 pt-3 sm:grid-cols-[1fr_auto]">
+        <div>
+          <p className="mb-1.5 text-[11px] font-bold tracking-wide text-ink-400 uppercase">Versões dos textos novos (até 3)</p>
+          <VersionPicker cat={cat} value={versions} onChange={(v) => (store.setPrefs({ versoesNovas: v }), setAplicado(false))} />
+        </div>
+        <div>
+          <p className="mb-1.5 text-[11px] font-bold tracking-wide text-ink-400 uppercase">Começa mostrando</p>
+          <Seg size="sm" value={vistaOf(view)} options={VISTAS} onChange={(v) => (store.setPrefs({ vistaNova: v }), setAplicado(false))} />
+        </div>
+      </div>
+      {total > 0 && (
+        <div className="mt-2 flex items-center gap-2 px-1">
+          <button
+            type="button"
+            onClick={() => {
+              if (!confirm(`Usar ${versions.join(" + ")} e “${VISTAS.find(([v]) => v === view)?.[1]}” em todos os ${total} textos desta aula?`)) return;
+              onApplyAll(versions, view);
+              setAplicado(true);
+            }}
+            className="text-xs font-semibold text-lume hover:underline"
+          >
+            Aplicar estas versões e esta forma em todos os textos da aula
+          </button>
+          {aplicado && <span className="text-xs text-sage">✓ aplicado</span>}
+        </div>
       )}
     </Card>
   );
@@ -438,29 +479,75 @@ function RoteiroCard({ lesson, save, go }: { lesson: BLesson; save: (p: Partial<
       ) : (
         <p className="text-xs text-ink-400">Nenhum roteiro ligado a esta aula.</p>
       )}
-      <select
-        value={note?.id ?? ""}
-        onChange={(e) => {
-          if (e.target.value === "__novo") {
-            const rid = createNote({ kind: "aula", template: "aula", title: lesson.title });
-            save({ roteiroId: rid });
-            return go({ r: "roteiro", id: rid });
-          }
-          save({ roteiroId: e.target.value || undefined });
+      <RoteiroBusca
+        atual={note?.id}
+        onPick={(rid) => save({ roteiroId: rid })}
+        onNovo={() => {
+          const rid = createNote({ kind: "aula", template: "aula", title: lesson.title });
+          save({ roteiroId: rid });
+          go({ r: "roteiro", id: rid });
         }}
-        className="mt-3 h-9 w-full rounded-xl bg-ink-800 px-3 text-xs font-semibold ring-1 ring-edge/8 ring-inset"
-      >
-        <option value="">{note ? "Tirar o roteiro" : "Escolher um roteiro…"}</option>
-        {st.index.notes
-          .slice()
-          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
-          .map((n) => (
-            <option key={n.id} value={n.id}>
-              {n.icon || KINDS[n.kind].icon} {n.title || "Sem título"}
-            </option>
-          ))}
-        <option value="__novo">+ Criar roteiro novo para esta aula</option>
-      </select>
+      />
     </Card>
+  );
+}
+
+const foldR = (s: string) => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+
+/** escolher o roteiro da aula com busca (para quando houver muitos) */
+function RoteiroBusca({ atual, onPick, onNovo }: { atual?: string; onPick: (id: string | undefined) => void; onNovo: () => void }) {
+  const st = useRoteiros();
+  const [q, setQ] = useState("");
+  const [aberto, setAberto] = useState(false);
+  const f = foldR(q.trim());
+  const pasta = (id?: string) => st.index.folders.find((x) => x.id === id)?.name;
+  const lista = st.index.notes
+    .filter((n) => !f || foldR(`${n.title} ${n.excerpt} ${pasta(n.folderId) ?? ""}`).includes(f))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 30);
+  return (
+    <div className="relative mt-3">
+      <Icon name="busca" className="pointer-events-none absolute top-[18px] left-3 size-4 -translate-y-1/2 text-ink-500" />
+      <input
+        value={q}
+        onChange={(e) => (setQ(e.target.value), setAberto(true))}
+        onFocus={() => setAberto(true)}
+        onBlur={() => setTimeout(() => setAberto(false), 150)}
+        placeholder={atual ? "Trocar por outro roteiro…" : "Buscar roteiro pelo nome ou pelo texto…"}
+        className="h-9 w-full rounded-xl bg-ink-800 pr-3 pl-9 text-xs font-semibold ring-1 ring-edge/8 outline-none ring-inset focus:ring-lume/60"
+      />
+      {aberto && (
+        <div className="absolute top-10 right-0 left-0 z-30 max-h-72 overflow-y-auto rounded-2xl bg-ink-800 p-1.5 shadow-2xl ring-1 ring-edge/10">
+          {lista.map((n) => (
+            <button
+              key={n.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => (onPick(n.id), setQ(""), setAberto(false))}
+              className={`flex w-full items-start gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-edge/[.06] ${n.id === atual ? "text-lume" : ""}`}
+            >
+              <span className="text-lg">{n.icon || KINDS[n.kind].icon}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-semibold">{n.title || "Sem título"}</span>
+                <span className="block truncate text-[11px] text-ink-400">
+                  {pasta(n.folderId) ? `${pasta(n.folderId)} · ` : ""}
+                  {n.excerpt}
+                </span>
+              </span>
+            </button>
+          ))}
+          {!lista.length && <p className="px-3 py-2 text-xs text-ink-400">Nenhum roteiro encontrado.</p>}
+          <div className="my-1 border-t border-edge/10" />
+          <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={onNovo} className="block w-full rounded-xl px-3 py-2 text-left text-sm font-semibold text-lume hover:bg-edge/[.06]">
+            + Criar roteiro novo para esta aula
+          </button>
+          {atual && (
+            <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => (onPick(undefined), setAberto(false))} className="block w-full rounded-xl px-3 py-2 text-left text-sm text-coral hover:bg-edge/[.06]">
+              Tirar o roteiro desta aula
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

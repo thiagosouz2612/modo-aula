@@ -8,6 +8,7 @@ import {
   type Catalog, type OrigWord, type Ref,
 } from "./bible";
 import type { BMark, BPassage } from "./types";
+import type { LexLinha } from "./lexfmt";
 
 /** palavra do original: [texto, transliteração, sentido, Strong] */
 export type Word = [text: string, translit: string, gloss: string, strong: string];
@@ -31,7 +32,11 @@ export type Palavra = {
   classe?: string;
   gramatica?: string;
   vezes?: number;
-  definicao?: string; // definição do léxico em português
+  /** o que diz o léxico, organizado por sentidos (em português quando traduzido) */
+  linhas?: LexLinha[];
+  lingua?: "pt" | "en";
+  /** posição da rolagem do painel (0 a 1), comandada pelo professor */
+  rolagem?: number;
 };
 
 export type Scene =
@@ -48,6 +53,8 @@ export type Scene =
       marks: BMark[];
       parte?: [number, number];
       palavra?: Palavra;
+      /** versões lado a lado */
+      colunas?: { versao: string; verses: SVerse[] }[];
       /** palavra escolhida: "versículo:índice" (fica destacada) */
       sel?: string;
     };

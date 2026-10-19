@@ -6,7 +6,8 @@ import type { Go } from "../main";
 import { Btn, Card, Icon, inputCls } from "../components/ui";
 import { native } from "../lib/native";
 import { store, useStore } from "../lib/store";
-import { importFromPlatform } from "../lib/sync";
+import { enviarParaPlataforma, importFromPlatform } from "../lib/sync";
+import { syncRoteiros } from "../lib/roteiros";
 import { uid, type BLesson } from "../lib/types";
 import { abaixo, DRAG, FolderIcon, ItemMenu, PastasLado, Vista } from "../components/Pastas";
 
@@ -49,6 +50,23 @@ export function Aulas({ go }: { go: Go }) {
     go({ r: "aula", id: l.id });
   }
 
+  async function enviar() {
+    setMsg(null);
+    const cfg = await native.config();
+    if (!cfg.conectado) return go({ r: "ajustes", aba: "conta" });
+    setBusy("Conectando…");
+    try {
+      const r = await enviarParaPlataforma(setBusy);
+      setBusy("Sincronizando os roteiros…");
+      await syncRoteiros();
+      setMsg({ ok: !r.falhas.length, text: `Guardado na plataforma: ${r.aulas} aulas${r.pdfs ? `, ${r.pdfs} PDFs` : ""} e os roteiros.${r.falhas.length ? ` Não foi: ${r.falhas.join("; ")}` : ""}` });
+    } catch (e) {
+      setMsg({ ok: false, text: e instanceof Error ? e.message : "Não foi possível guardar na plataforma." });
+    } finally {
+      setBusy("");
+    }
+  }
+
   async function importar() {
     setMsg(null);
     const cfg = await native.config();
@@ -78,6 +96,9 @@ export function Aulas({ go }: { go: Go }) {
           <p className="mt-3 text-sm text-ink-400">Slides e textos bíblicos prontos para projetar, mesmo sem internet.</p>
         </div>
         <div className="flex gap-2">
+          <Btn onClick={enviar} disabled={Boolean(busy)} title="Guardar as aulas, os PDFs e os roteiros na plataforma (cópia na nuvem)">
+            <Icon name="subir" /> Guardar na plataforma
+          </Btn>
           <Btn onClick={importar} disabled={Boolean(busy)}>
             <Icon name="nuvem" /> Trazer da plataforma
           </Btn>

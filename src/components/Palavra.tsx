@@ -3,13 +3,15 @@
 // Painel do professor (Bíblia e apresentação) e o resumo que vai para
 // o projetor.
 // ------------------------------------------------------------------
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   cleanTranslit, cleanWord, describeMorph, loadLex, plainDefinition, splitGloss, strongLabel, type LexEntry, type OrigWord,
 } from "../lib/bible";
 import { native } from "../lib/native";
 import type { Palavra } from "../lib/scene";
 import { Btn, Icon, Toggle } from "./ui";
+import { Definicao } from "./Definicao";
+import { estruturar } from "../lib/lexfmt";
 
 /** classe gramatical do léxico em português ("G:N-M" → "subst. masc.") */
 export function posLabel(p: string) {
@@ -84,13 +86,13 @@ export function palavraDe(info: ReturnType<typeof useWordInfo>, comDefinicao: bo
     ...(entry?.p ? { classe: posLabel(entry.p) } : {}),
     ...(morph ? { gramatica: describeMorph(morph, strong) } : {}),
     ...(entry?.n ? { vezes: entry.n } : {}),
-    ...(comDefinicao && pt ? { definicao: pt } : {}),
+    ...(comDefinicao && (pt || entry?.d) ? { linhas: pt ? estruturar(pt, false) : estruturar(entry!.d, true), lingua: pt ? ("pt" as const) : ("en" as const) } : {}),
   };
 }
 
 /** painel do professor */
 export function WordPanel({
-  word, refLabel, onClose, onJump, onProjetar, projetando, info: given,
+  word, refLabel, onClose, onJump, onProjetar, projetando, info: given, onRef, autoTraduzir,
 }: {
   word: OrigWord;
   refLabel: string;
@@ -100,12 +102,22 @@ export function WordPanel({
   onProjetar?: (v: boolean) => void;
   projetando?: boolean;
   info?: ReturnType<typeof useWordInfo>;
+  /** clique numa referência do léxico */
+  onRef?: (ref: string) => void;
+  /** traduz sozinho ao abrir (se houver internet) */
+  autoTraduzir?: boolean;
 }) {
   const own = useWordInfo(word);
   const info = given ?? own;
   const { entry, pt, busy, err, translate, strong, morph, gloss, parts, heb, text, translit, meaning, here, lemma } = info;
   const [ingles, setIngles] = useState(false);
   useEffect(() => setIngles(false), [strong]);
+  const tentou = useRef("");
+  useEffect(() => {
+    if (!autoTraduzir || !entry?.d || pt || busy || tentou.current === strong) return;
+    tentou.current = strong;
+    void translate();
+  }, [autoTraduzir, entry, pt, busy, strong]);
   const origFont = heb ? "font-hebrew" : "font-greek";
 
   return (
@@ -191,7 +203,9 @@ export function WordPanel({
               O que diz o léxico · {heb ? "BDB (hebraico)" : "Abbott-Smith (grego)"}
             </p>
             {pt ? (
-              <p className="mt-2 text-[15px] leading-relaxed whitespace-pre-line text-ink-100">{pt}</p>
+              <div className="mt-3 text-[15px] text-ink-100">
+                <Definicao linhas={estruturar(pt, false)} onRef={onRef} />
+              </div>
             ) : (
               <div className="mt-2">
                 <Btn size="sm" variant="primary" onClick={() => void translate()} disabled={busy}>
@@ -202,14 +216,12 @@ export function WordPanel({
             )}
             {err && <p className="mt-2 text-xs text-coral">{err}</p>}
             <button type="button" onClick={() => setIngles((v) => !v)} className="mt-3 text-xs font-semibold text-ink-300 underline-offset-4 hover:text-lume hover:underline">
-              {ingles ? "Ocultar o original em inglês" : "Ver o léxico original (inglês)"}
+              {ingles ? "Ocultar o original em inglês" : pt ? "Ver o léxico original (inglês)" : "Ler o léxico em inglês"}
             </button>
             {ingles && (
-              <div
-                className="mt-2 rounded-xl bg-ink-800 p-3 text-[13px] leading-relaxed text-ink-200 [&_b]:font-semibold [&_b]:text-ink-100 [&_i]:italic"
-                lang="en"
-                dangerouslySetInnerHTML={{ __html: entry.d }}
-              />
+              <div className="mt-2 rounded-xl bg-ink-800 p-3 text-[13px] text-ink-200" lang="en">
+                <Definicao linhas={estruturar(entry.d, true)} onRef={onRef} />
+              </div>
             )}
           </div>
         )}

@@ -7,6 +7,7 @@ import { useLayoutEffect, useRef, type Ref } from "react";
 import { isTrad, type Palavra, type Scene, type SVerse, type Tela } from "../lib/scene";
 import type { BMark } from "../lib/types";
 import { LogoCompleto } from "./ui";
+import { Definicao } from "./Definicao";
 
 /** onde estão as imagens dos slides (servidor local do aplicativo) */
 let imgBase = "";
@@ -18,7 +19,9 @@ export const imgUrl = (id: string) => (id.startsWith("blob:") ? id : (imgOverrid
 /** clique numa palavra ligada ao original (versículo e índice da palavra) */
 export type OnWord = (n: number, i: number) => void;
 
-export function Palco({ tela, textRef, mini = false, onWord }: { tela: Tela; textRef?: Ref<HTMLDivElement>; mini?: boolean; onWord?: OnWord }) {
+export function Palco({
+  tela, textRef, mini = false, onWord, onRolar,
+}: { tela: Tela; textRef?: Ref<HTMLDivElement>; mini?: boolean; onWord?: OnWord; onRolar?: (f: number) => void }) {
   const { s, tema } = tela;
   const dark = tema === "noite" || s.k === "preto" || s.k === "slide";
   return (
@@ -36,7 +39,7 @@ export function Palco({ tela, textRef, mini = false, onWord }: { tela: Tela; tex
     >
       {s.k === "logo" && <LogoScene titulo={s.titulo} tema={tema} />}
       {s.k === "slide" && <img src={imgUrl(s.img)} alt="" draggable={false} className="absolute inset-0 h-full w-full object-contain" />}
-      {s.k === "texto" && <TextoScene s={s} escala={tela.escala} textRef={textRef} mini={mini} tema={tema} onWord={onWord} />}
+      {s.k === "texto" && <TextoScene s={s} escala={tela.escala} textRef={textRef} mini={mini} tema={tema} onWord={onWord} onRolar={onRolar} />}
     </div>
   );
 }
@@ -60,12 +63,12 @@ function LogoScene({ titulo, tema }: { titulo?: string; tema: Tela["tema"] }) {
 type TextoS = Extract<Scene, { k: "texto" }>;
 
 function TextoScene({
-  s, escala, textRef, mini, tema, onWord,
-}: { s: TextoS; escala: number; textRef?: Ref<HTMLDivElement>; mini: boolean; tema: Tela["tema"]; onWord?: OnWord }) {
+  s, escala, textRef, mini, tema, onWord, onRolar,
+}: { s: TextoS; escala: number; textRef?: Ref<HTMLDivElement>; mini: boolean; tema: Tela["tema"]; onWord?: OnWord; onRolar?: (f: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const inner = useRef<HTMLDivElement>(null);
   const side = Boolean(s.palavra);
-  const key = JSON.stringify([s.ref, s.versao, s.vista, s.verses.map((v) => v.n), s.marks.length, escala, side]);
+  const key = JSON.stringify([s.ref, s.versao, s.vista, s.verses.map((v) => v.n), s.marks.length, escala, side, s.colunas?.map((c) => c.versao)]);
 
   // maior letra que cabe na tela (busca binária), limitada pela escala escolhida
   useLayoutEffect(() => {
@@ -98,7 +101,7 @@ function TextoScene({
   const hebFont = s.heb && orig;
   const accent = "text-lume";
   const muted = tema === "noite" ? "text-ink-400" : "text-[#7c7264]";
-  const label = s.vista === "traducao" ? s.versao : s.vista === "strong" ? `${s.versao} · Strong` : s.heb ? "Hebraico" : "Grego";
+  const label = s.colunas ? s.colunas.map((c) => c.versao).join(" · ") : s.vista === "traducao" ? s.versao : s.vista === "strong" ? `${s.versao} · Strong` : s.heb ? "Hebraico" : "Grego";
 
   // clique numa palavra (só no apresentador)
   const click = (e: React.MouseEvent) => {
@@ -112,7 +115,7 @@ function TextoScene({
 
   return (
     <>
-      <div className={`absolute top-[4.2cqh] left-[4.5cqw] flex items-baseline justify-end gap-[1.2cqw] text-right ${side ? "right-[40cqw]" : "right-[4.5cqw]"}`}>
+      <div className={`absolute top-[4.2cqh] left-[4.5cqw] flex items-baseline justify-end gap-[1.2cqw] text-right ${side ? "right-[43cqw]" : "right-[4.5cqw]"}`}>
         <span className="h-px w-[6cqw] self-center bg-lume/60" />
         <span className="font-sans text-[2.9cqh] font-semibold tracking-wide">{s.ref}</span>
         <span className={`font-sans text-[2.1cqh] font-medium tracking-[0.18em] uppercase ${muted}`}>
@@ -120,7 +123,7 @@ function TextoScene({
           {s.parte && s.parte[1] > 1 ? ` · ${s.parte[0]} de ${s.parte[1]}` : ""}
         </span>
       </div>
-      <div ref={box} className={`absolute top-[12cqh] bottom-[8cqh] left-[6cqw] flex items-center justify-center ${side ? "right-[41cqw]" : "right-[6cqw]"}`}>
+      <div ref={box} className={`absolute top-[12cqh] bottom-[8cqh] left-[6cqw] flex items-center justify-center ${side ? "right-[44cqw]" : "right-[6cqw]"}`}>
         <div
           ref={(el) => {
             (inner as { current: HTMLDivElement | null }).current = el;
@@ -131,17 +134,28 @@ function TextoScene({
           dir={hebFont ? "rtl" : "ltr"}
           onClick={click}
           className={`palco-texto max-h-full w-full ${mini ? "" : "entra"} ${hebFont ? "font-hebrew leading-[1.55]" : orig ? "font-greek leading-[1.45]" : "font-serif leading-[1.42]"} ${
-            s.verses.length === 1 && s.vista !== "interlinear" ? "text-center text-balance" : ""
+            s.verses.length === 1 && s.vista !== "interlinear" && !s.colunas ? "text-center text-balance" : ""
           } ${onWord ? "palco-clicavel" : ""}`}
         >
-          {s.vista === "interlinear" ? (
+          {s.colunas ? (
+            <div className="grid text-left" style={{ gridTemplateColumns: `repeat(${s.colunas.length}, minmax(0, 1fr))`, columnGap: "1.4em" }}>
+              {s.colunas.map((c) => (
+                <div key={c.versao}>
+                  <p className={`mb-[0.4em] font-sans text-[0.42em] font-bold tracking-[0.2em] uppercase ${accent}`}>{c.versao}</p>
+                  {c.verses.map((v, i) => (
+                    <Verse key={v.n} v={v} s={{ ...s, marks: [], vista: "traducao" }} accent={accent} first={i === 0} single={c.verses.length === 1} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          ) : s.vista === "interlinear" ? (
             <Interlinear s={s} accent={accent} muted={muted} />
           ) : (
             s.verses.map((v, i) => <Verse key={v.n} v={v} s={s} accent={accent} first={i === 0} single={s.verses.length === 1} />)
           )}
         </div>
       </div>
-      {s.palavra && <PalavraLado p={s.palavra} tema={tema} />}
+      {s.palavra && <PalavraLado p={s.palavra} tema={tema} onRolar={onRolar} />}
     </>
   );
 }
@@ -260,53 +274,90 @@ function Interlinear({ s, accent, muted }: { s: TextoS; accent: string; muted: s
 }
 
 /** a palavra estudada, ao lado do texto (o que a turma vê) */
-function PalavraLado({ p, tema }: { p: Palavra; tema: Tela["tema"] }) {
+function PalavraLado({ p, tema, onRolar }: { p: Palavra; tema: Tela["tema"]; onRolar?: (f: number) => void }) {
   const muted = tema === "noite" ? "text-ink-400" : "text-[#7c7264]";
   const lemaDiferente = p.lema && p.lema !== p.texto;
+  const box = useRef<HTMLDivElement>(null);
+  const meu = useRef(false);
+  // a turma acompanha a rolagem que o professor faz no painel
+  useLayoutEffect(() => {
+    const el = box.current;
+    if (!el || meu.current) return void (meu.current = false);
+    const max = el.scrollHeight - el.clientHeight;
+    el.scrollTop = Math.round((p.rolagem ?? 0) * Math.max(0, max));
+  }, [p.rolagem, p.strong]);
+  let quadro = 0;
   return (
     <aside
-      className={`entra absolute top-0 right-0 bottom-0 flex w-[37cqw] flex-col overflow-hidden px-[3cqw] py-[5cqh] ${
+      ref={box}
+      onScroll={(e) => {
+        if (!onRolar) return;
+        const el = e.currentTarget;
+        cancelAnimationFrame(quadro);
+        quadro = requestAnimationFrame(() => {
+          const max = el.scrollHeight - el.clientHeight;
+          meu.current = true;
+          onRolar(max > 0 ? Math.round((el.scrollTop / max) * 1000) / 1000 : 0);
+        });
+      }}
+      className={`entra absolute top-0 right-0 bottom-0 w-[40cqw] overflow-y-auto px-[3cqw] py-[5cqh] ${onRolar ? "" : "sem-barra"} ${
         tema === "noite" ? "bg-[#14161b]/95 shadow-[-2cqw_0_6cqw_rgba(0,0,0,.45)]" : "bg-white/90 shadow-[-2cqw_0_6cqw_rgba(0,0,0,.08)]"
       }`}
     >
       <p className="font-sans text-[1.9cqh] font-bold tracking-[0.2em] text-lume uppercase">
         {p.heb ? "Hebraico" : "Grego"} · Strong {p.strong.replace(/^([GH])0*(\d+).*$/, "$1$2")}
       </p>
-      <p lang={p.heb ? "he" : "grc"} dir={p.heb ? "rtl" : "ltr"} className={`mt-[2.5cqh] text-left text-[8.5cqh] leading-[1.1] ${p.heb ? "font-hebrew" : "font-greek"}`}>
-        {p.lema || p.texto}
-      </p>
-      <p className={`mt-[1cqh] font-sans text-[2.8cqh] italic ${muted}`}>{p.lemaTranslit || p.translit}</p>
-      <p className="mt-[3cqh] font-serif text-[5cqh] leading-tight font-semibold text-lume">{p.sentido || "—"}</p>
-      {p.base && <p className={`mt-[0.8cqh] font-sans text-[2.3cqh] ${muted}`}>palavra-base: {p.base}</p>}
-      {p.aqui && <p className={`mt-[0.8cqh] font-sans text-[2.3cqh] ${muted}`}>neste versículo: <b className="font-semibold">{p.aqui}</b></p>}
-      <div className={`mt-[3cqh] space-y-[1cqh] border-t pt-[2.5cqh] font-sans text-[2.3cqh] ${tema === "noite" ? "border-white/10" : "border-black/10"}`}>
+      <div className="mt-[2cqh] flex flex-wrap items-baseline gap-x-[1.5cqw]">
+        <p lang={p.heb ? "he" : "grc"} dir={p.heb ? "rtl" : "ltr"} className={`text-[7.5cqh] leading-[1.15] ${p.heb ? "font-hebrew" : "font-greek"}`}>
+          {p.lema || p.texto}
+        </p>
+        <p className={`font-sans text-[2.6cqh] italic ${muted}`}>{p.lemaTranslit || p.translit}</p>
+      </div>
+      <p className="mt-[1.5cqh] font-serif text-[4.6cqh] leading-tight font-semibold text-lume">{p.sentido || "—"}</p>
+      {(p.base || p.aqui) && (
+        <p className={`mt-[0.8cqh] font-sans text-[2.2cqh] ${muted}`}>
+          {p.base && <>palavra-base: {p.base}</>}
+          {p.base && p.aqui && " · "}
+          {p.aqui && (
+            <>
+              neste versículo: <b className="font-semibold">{p.aqui}</b>
+            </>
+          )}
+        </p>
+      )}
+      <div className={`mt-[2.5cqh] grid grid-cols-[auto_1fr] gap-x-[1.2cqw] gap-y-[0.8cqh] border-t pt-[2cqh] font-sans text-[2.1cqh] ${tema === "noite" ? "border-white/10" : "border-black/10"}`}>
         {lemaDiferente && (
-          <p>
-            <span className={muted}>No texto: </span>
-            <span className={p.heb ? "font-hebrew" : "font-greek"}>{p.texto}</span> <i className={muted}>({p.translit})</i>
-          </p>
+          <>
+            <span className={muted}>No texto</span>
+            <span>
+              <span className={p.heb ? "font-hebrew" : "font-greek"}>{p.texto}</span> <i className={muted}>({p.translit})</i>
+            </span>
+          </>
         )}
         {p.classe && (
-          <p>
-            <span className={muted}>Classe: </span>
-            {p.classe}
-          </p>
+          <>
+            <span className={muted}>Classe</span>
+            <span>{p.classe}</span>
+          </>
         )}
         {p.gramatica && (
-          <p>
-            <span className={muted}>Gramática: </span>
-            {p.gramatica}
-          </p>
+          <>
+            <span className={muted}>Gramática</span>
+            <span>{p.gramatica}</span>
+          </>
         )}
         {p.vezes ? (
-          <p>
-            <span className={muted}>Aparece </span>
-            {p.vezes.toLocaleString("pt-BR")} vezes na Bíblia
-          </p>
+          <>
+            <span className={muted}>Aparece</span>
+            <span>{p.vezes.toLocaleString("pt-BR")} vezes na Bíblia</span>
+          </>
         ) : null}
       </div>
-      {p.definicao && (
-        <p className={`mt-[2.5cqh] line-clamp-[12] font-sans text-[2.1cqh] leading-snug ${tema === "noite" ? "text-ink-200" : "text-[#3a342d]"}`}>{p.definicao}</p>
+      {p.linhas && p.linhas.length > 0 && (
+        <div className={`mt-[2.5cqh] border-t pt-[2cqh] font-sans text-[2.1cqh] ${tema === "noite" ? "border-white/10 text-ink-200" : "border-black/10 text-[#3a342d]"}`}>
+          <p className={`mb-[1.2cqh] text-[1.7cqh] font-bold tracking-[0.18em] uppercase ${muted}`}>O que diz o léxico{p.lingua === "en" ? " (inglês)" : ""}</p>
+          <Definicao linhas={p.linhas} grande tema={tema} />
+        </div>
       )}
     </aside>
   );

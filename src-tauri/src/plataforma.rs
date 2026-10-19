@@ -182,3 +182,80 @@ pub async fn plataforma_roteiros_salvar(corpo: String, cfg: State<'_, Config>) -
     }
     Ok(())
 }
+
+// ---------------- enviar para a plataforma (cópia na nuvem) ----------------
+
+/// salva as aulas e pastas do modo aula na plataforma (o mesmo JSON do site)
+#[tauri::command]
+pub async fn plataforma_enviar_aulas(corpo: String, cfg: State<'_, Config>) -> Result<(), String> {
+    let (site, cookie) = session(&cfg)?;
+    serde_json::from_str::<Value>(&corpo).map_err(|_| "Dados inválidos.".to_string())?;
+    let res = http()
+        .post(format!("{site}/api/biblia-aulas"))
+        .header(reqwest::header::COOKIE, cookie)
+        .header(reqwest::header::CONTENT_TYPE, "application/json")
+        .body(corpo)
+        .send()
+        .await
+        .map_err(offline)?;
+    if !res.status().is_success() {
+        return Err(error_of(res).await);
+    }
+    Ok(())
+}
+
+/// a plataforma já tem este arquivo?
+#[tauri::command]
+pub async fn plataforma_tem_arquivo(id: String, cfg: State<'_, Config>) -> Result<bool, String> {
+    if !valid_id(&id) {
+        return Err("Arquivo inválido.".into());
+    }
+    let (site, cookie) = session(&cfg)?;
+    let res = http().get(format!("{site}/api/arquivos/{id}")).header(reqwest::header::COOKIE, cookie).send().await.map_err(offline)?;
+    Ok(res.status().is_success())
+}
+
+const PARTE: usize = 3 * 1024 * 1024; // o site aceita até 4,5 MB por envio
+
+/// envia uma apresentação (PDF) deste computador para a plataforma, em partes
+#[tauri::command]
+pub async fn plataforma_enviar_arquivo(id: String, nome: String, cfg: State<'_, Config>, pasta: State<'_, Pasta>) -> Result<(), String> {
+    if !valid_id(&id) {
+        return Err("Arquivo inválido.".into());
+    }
+    let (site, cookie) = session(&cfg)?;
+    let bytes = std::fs::read(pasta.0.join("arquivos").join(&id)).map_err(|_| "O PDF não está neste computador.".to_string())?;
+    if bytes.is_empty() {
+        return Err("Arquivo vazio.".into());
+    }
+    let partes = bytes.len().div_ceil(PARTE);
+    let res = http()
+        .post(format!("{site}/api/arquivos"))
+        .header(reqwest::header::COOKIE, &cookie)
+        .json(&serde_json::json!({ "id": id, "nome": nome, "tipo": "application/pdf", "tamanho": bytes.len(), "partes": partes }))
+        .send()
+        .await
+        .map_err(offline)?;
+    if !res.status().is_success() {
+        return Err(error_of(res).await);
+    }
+    for (i, chunk) in bytes.chunks(PARTE).enumerate() {
+        let mut ok = false;
+        for _ in 0..3 {
+            let r = http()
+                .put(format!("{site}/api/arquivos/{id}/{i}"))
+                .header(reqwest::header::COOKIE, &cookie)
+                .body(chunk.to_vec())
+                .send()
+                .await;
+            if r.is_ok_and(|r| r.status().is_success()) {
+                ok = true;
+                break;
+            }
+        }
+        if !ok {
+            return Err("A conexão caiu durante o envio do PDF. Tente de novo.".into());
+        }
+    }
+    Ok(())
+}

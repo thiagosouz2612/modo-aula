@@ -241,7 +241,7 @@ function Reader({ cat }: { cat: Catalog }) {
       </div>
       {word && (
         <div className="w-[380px] shrink-0 border-l border-edge/5 bg-ink-900">
-          <WordPanel word={word} refLabel={`${info.name} ${chapter}:${wordRef}`} onClose={() => setWord(null)} onJump={setWord} />
+          <WordPanel word={word} refLabel={`${info.name} ${chapter}:${wordRef}`} onClose={() => setWord(null)} onJump={setWord} onRef={(r) => go(r.split(",")[0].trim())} />
         </div>
       )}
     </div>

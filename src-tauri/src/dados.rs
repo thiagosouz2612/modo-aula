@@ -207,3 +207,24 @@ pub fn roteiro_apagar(pasta: State<Pasta>, nome: String) -> Result<(), String> {
     let _ = std::fs::remove_file(roteiro_path(&pasta, &nome)?);
     Ok(())
 }
+
+// ---------------- cópia de segurança em arquivo ----------------
+
+/// grava a cópia na pasta Documentos e devolve o caminho
+#[tauri::command]
+pub fn salvar_copia(app: tauri::AppHandle, conteudo: String, nome: String) -> Result<String, String> {
+    use tauri::Manager;
+    let nome: String = nome.chars().filter(|c| c.is_alphanumeric() || " -_.".contains(*c)).collect();
+    // Documentos\Modo Aula (se não houver pasta Documentos, na pasta pessoal ou na do aplicativo)
+    let base = app
+        .path()
+        .document_dir()
+        .or_else(|_| app.path().home_dir().map(|h| h.join("Documents")))
+        .or_else(|_| app.path().app_data_dir())
+        .map_err(|e| e.to_string())?;
+    let dir = base.join("Modo Aula");
+    std::fs::create_dir_all(&dir).map_err(|e| format!("Não foi possível criar a pasta: {e}"))?;
+    let path = dir.join(if nome.ends_with(".json") { nome } else { format!("{nome}.json") });
+    std::fs::write(&path, conteudo).map_err(|e| format!("Não foi possível gravar: {e}"))?;
+    Ok(path.display().to_string())
+}

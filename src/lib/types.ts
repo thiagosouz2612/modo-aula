@@ -34,6 +34,8 @@ export type Prefs = {
   roteiroFonte: number; // tamanho da letra do roteiro na apresentação (rem)
   vistaAulas: "grade" | "lista";
   vistaRoteiros: "grade" | "lista";
+  versoesNovas?: string[]; // versões dos textos novos da aula
+  vistaNova?: BView; // forma inicial dos textos novos
 };
 
 export type Store = { lessons: BLesson[]; folders: BFolder[]; prefs: Prefs; versao: 1 };

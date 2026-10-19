@@ -169,6 +169,31 @@ export function deleteFolder(id: string) {
   });
 }
 
+/** estado atual (fora do React) */
+export const useRoteirosState = () => state;
+
+/** volta roteiros de uma cópia de segurança (os que já existem aqui ficam com a versão mais nova) */
+export async function restaurarRoteiros(index: RIndex | undefined, textos: Record<string, string>) {
+  await loadRoteiros();
+  if (!index?.notes) return 0;
+  const local = new Map(state.index.notes.map((n) => [n.id, n]));
+  const notes = [...state.index.notes];
+  let n = 0;
+  for (const r of index.notes) {
+    const l = local.get(r.id);
+    if (l && l.updatedAt >= r.updatedAt) continue;
+    await native.roteiroSalvar(fileOf(r.id), textos[r.id] ?? "");
+    contentCache.set(r.id, textos[r.id] ?? "");
+    const { syncedAt: _s, ...semSync } = r;
+    if (l) notes.splice(notes.indexOf(l), 1, semSync);
+    else notes.push(semSync);
+    n++;
+  }
+  const fids = new Set(state.index.folders.map((f) => f.id));
+  saveIndex({ v: 1, folders: [...state.index.folders, ...(index.folders ?? []).filter((f) => !fids.has(f.id))], notes });
+  return n;
+}
+
 // ---------------- sincronizar com a plataforma ----------------
 let syncTimer: ReturnType<typeof setTimeout> | null = null;
 let conectado = false;

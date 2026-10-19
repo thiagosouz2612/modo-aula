@@ -76,13 +76,28 @@ export const native = {
   plataformaRoteirosSalvar: (corpo: unknown): Promise<void> =>
     isNative ? call("plataforma_roteiros_salvar", { corpo: JSON.stringify(corpo) }) : Promise.reject(new Error("Disponível no aplicativo.")),
 
+  plataformaEnviarAulas: (corpo: unknown): Promise<void> =>
+    isNative ? call("plataforma_enviar_aulas", { corpo: JSON.stringify(corpo) }) : Promise.reject(new Error("Disponível no aplicativo.")),
+  plataformaTemArquivo: (id: string): Promise<boolean> => (isNative ? call("plataforma_tem_arquivo", { id }) : Promise.resolve(false)),
+  plataformaEnviarArquivo: (id: string, nome: string): Promise<void> =>
+    isNative ? call("plataforma_enviar_arquivo", { id, nome }) : Promise.reject(new Error("Disponível no aplicativo.")),
+  /** grava a cópia de segurança em Documentos\Modo Aula (devolve o caminho) */
+  salvarCopia: async (conteudo: string, nome: string): Promise<string> => {
+    if (isNative) return call("salvar_copia", { conteudo, nome });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([conteudo], { type: "application/json" }));
+    a.download = `${nome}.json`;
+    a.click();
+    return `Downloads/${nome}.json`;
+  },
+
   /** definição do léxico em português (já guardada) */
   traducaoLexico: (strong: string): Promise<string | null> =>
     isNative ? call("traducao_lexico", { strong }) : Promise.resolve(demoTr.get(strong) ?? null),
   /** traduz a definição do léxico (precisa de internet uma vez) */
   traduzirLexico: async (strong: string, texto: string): Promise<string> => {
     if (isNative) return call("traduzir_lexico", { strong, texto });
-    const t = `[tradução de teste] ${texto.slice(0, 400)}`;
+    const t = texto; // modo de teste (navegador): devolve o próprio texto
     demoTr.set(strong, t);
     return t;
   },

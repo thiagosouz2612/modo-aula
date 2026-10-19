@@ -1,7 +1,7 @@
 // ------------------------------------------------------------------
 // Ajustes: projeção, telas da rede, conta da plataforma e Bíblia offline.
 // ------------------------------------------------------------------
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import type { Go } from "../main";
 import { Palco } from "../components/Palco";
@@ -12,6 +12,8 @@ import { fmtBytes, native, on, type BibliaStatus, type Config, type Info, type P
 import { store, useStore } from "../lib/store";
 import { importFromPlatform } from "../lib/sync";
 import { setConectado, syncRoteiros } from "../lib/roteiros";
+import { enviarParaPlataforma } from "../lib/sync";
+import { restaurarCopia, salvarCopia } from "../lib/copia";
 
 const ABAS = [
   ["projecao", "Projeção", "projetor"],
@@ -275,6 +277,7 @@ function Conta({ go }: { go: Go }) {
           )}
         </Card>
       </Section>
+      <Nuvem conectado={cfg.conectado} />
       <Section title="Endereço do site" desc="De onde vêm as aulas e a Bíblia.">
         <div className="flex max-w-xl gap-2">
           <input value={site} onChange={(e) => setSite(e.target.value)} className={inputCls} />
@@ -379,6 +382,80 @@ function BibliaOffline() {
           </div>
         )}
         {msg && <p className="mt-4 text-sm text-ink-200">{msg}</p>}
+      </Card>
+    </Section>
+  );
+}
+
+// ---------------- cópias de segurança ----------------
+function Nuvem({ conectado }: { conectado: boolean }) {
+  const [busy, setBusy] = useState("");
+  const [msg, setMsg] = useState<{ ok: boolean; t: string } | null>(null);
+  const arquivo = useRef<HTMLInputElement>(null);
+  const guardar = async () => {
+    setMsg(null);
+    try {
+      const r = await enviarParaPlataforma(setBusy);
+      setBusy("Sincronizando os roteiros…");
+      await syncRoteiros();
+      setMsg({
+        ok: !r.falhas.length,
+        t: `Pronto: ${r.aulas} aulas${r.pdfs ? ` e ${r.pdfs} PDFs` : ""} guardados na plataforma, junto com os roteiros.${r.falhas.length ? ` Não foi: ${r.falhas.join("; ")}` : ""}`,
+      });
+    } catch (e) {
+      setMsg({ ok: false, t: e instanceof Error ? e.message : "Não foi possível enviar." });
+    } finally {
+      setBusy("");
+    }
+  };
+  const copia = async () => {
+    setMsg(null);
+    setBusy("Gravando a cópia…");
+    try {
+      const onde = await salvarCopia();
+      setMsg({ ok: true, t: `Cópia salva em: ${onde}` });
+    } catch (e) {
+      setMsg({ ok: false, t: e instanceof Error ? e.message : "Não foi possível salvar a cópia." });
+    } finally {
+      setBusy("");
+    }
+  };
+  const restaurar = async (f: File) => {
+    setMsg(null);
+    setBusy("Restaurando…");
+    try {
+      const r = await restaurarCopia(f);
+      setMsg({ ok: true, t: `Restaurado: ${r.aulas} aulas e ${r.roteiros} roteiros. O que já estava aqui foi mantido.` });
+    } catch (e) {
+      setMsg({ ok: false, t: e instanceof Error ? e.message : "Não foi possível restaurar." });
+    } finally {
+      setBusy("");
+      if (arquivo.current) arquivo.current.value = "";
+    }
+  };
+  return (
+    <Section
+      title="Cópia de segurança"
+      desc="Para não perder nada se o computador der problema. Na plataforma, as aulas e os roteiros ficam guardados na nuvem e voltam com “Trazer as aulas”."
+    >
+      <input ref={arquivo} type="file" accept=".json,application/json" className="hidden" onChange={(e) => e.target.files?.[0] && void restaurar(e.target.files[0])} />
+      <Card className="space-y-4 p-6">
+        <div className="flex flex-wrap items-center gap-3">
+          <Btn variant="primary" onClick={() => void guardar()} disabled={!conectado || Boolean(busy)}>
+            <Icon name="subir" /> Guardar tudo na plataforma
+          </Btn>
+          <span className="text-xs text-ink-400">{conectado ? "Aulas, PDFs e roteiros." : "Entre com o login acima para usar."}</span>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-t border-edge/8 pt-4">
+          <Btn onClick={() => void copia()} disabled={Boolean(busy)}>
+            <Icon name="baixar" /> Salvar cópia em arquivo
+          </Btn>
+          <Btn variant="ghost" onClick={() => arquivo.current?.click()} disabled={Boolean(busy)}>
+            Restaurar de um arquivo…
+          </Btn>
+          <span className="text-xs text-ink-400">Aulas, pastas e roteiros num arquivo .json (em Documentos › Modo Aula). Os PDFs vão pela plataforma.</span>
+        </div>
+        {(busy || msg) && <p className={`text-sm ${busy ? "text-ink-300" : msg?.ok ? "text-sage" : "text-coral"}`} data-select>{busy || msg?.t}</p>}
       </Card>
     </Section>
   );
